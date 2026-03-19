@@ -1,0 +1,15 @@
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\bin\Debug\net10.0\OfficeManagement.Application.deps.json
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\bin\Debug\net10.0\OfficeManagement.Application.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\bin\Debug\net10.0\OfficeManagement.Application.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\bin\Debug\net10.0\OfficeManagement.Domain.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\bin\Debug\net10.0\OfficeManagement.Domain.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.csproj.AssemblyReference.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.AssemblyInfoInputs.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.AssemblyInfo.cs
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.csproj.CoreCompileInputs.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeMa.C390FE03.Up2Date
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\refint\OfficeManagement.Application.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\OfficeManagement.Application.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Application\obj\Debug\net10.0\ref\OfficeManagement.Application.dll

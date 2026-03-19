@@ -1,0 +1,17 @@
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.csproj.AssemblyReference.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.AssemblyInfoInputs.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.AssemblyInfo.cs
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.csproj.CoreCompileInputs.cache
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Infrastructure.deps.json
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Infrastructure.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Infrastructure.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Application.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Domain.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Application.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\bin\Debug\net10.0\OfficeManagement.Domain.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeMa.1836D691.Up2Date
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\refint\OfficeManagement.Infrastructure.dll
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\OfficeManagement.Infrastructure.pdb
+D:\Projects\CursorAI\office-management\backend\src\OfficeManagement.Infrastructure\obj\Debug\net10.0\ref\OfficeManagement.Infrastructure.dll
