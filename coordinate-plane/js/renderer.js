@@ -17,6 +17,7 @@ export class FloorPlanRenderer {
 
         this.ns = 'http://www.w3.org/2000/svg';
         this.layers = {};
+        this.groupMetas = [];
     }
 
     init() {
@@ -24,7 +25,7 @@ export class FloorPlanRenderer {
         this.svg.setAttribute('width', this.mapper.svgW);
         this.svg.setAttribute('height', this.mapper.svgH);
 
-        ['grid', 'axes', 'dimensions', 'zones', 'elements', 'labels', 'selection'].forEach(name => {
+        ['grid', 'axes', 'dimensions', 'zones', 'groups', 'elements', 'labels', 'selection'].forEach(name => {
             const g = document.createElementNS(this.ns, 'g');
             g.setAttribute('class', `layer-${name}`);
             g.dataset.layer = name;
@@ -47,6 +48,8 @@ export class FloorPlanRenderer {
 
         const zones = elements.filter(e => e.type === 'zone');
         zones.forEach(el => this.drawZone(el));
+
+        this.drawGroupOverlays(elements);
 
         const rest = elements.filter(e => e.type !== 'door' && e.type !== 'zone');
         rest.forEach(el => this.drawElement(el));
@@ -404,6 +407,60 @@ export class FloorPlanRenderer {
         t.setAttribute('class', 'element-label');
         t.textContent = labelText;
         g.appendChild(t);
+    }
+
+    /* ---- Group Overlays ---- */
+
+    drawGroupOverlays(elements) {
+        const g = this.layers.groups;
+        const m = this.mapper;
+        const groupIds = [...new Set(elements.filter(e => e.groupId).map(e => e.groupId))];
+
+        groupIds.forEach(gid => {
+            const meta = this.groupMetas.find(gm => gm.groupId === gid);
+            const showBorder = meta ? meta.showBorder !== false : true;
+            const showLabel = meta ? meta.showLabel !== false : true;
+            const label = meta ? (meta.label || '') : '';
+
+            if (!showBorder && !showLabel) return;
+
+            const members = elements.filter(e => e.groupId === gid);
+            if (members.length === 0) return;
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            members.forEach(el => {
+                minX = Math.min(minX, el.x);
+                minY = Math.min(minY, el.y);
+                maxX = Math.max(maxX, el.x + el.width);
+                maxY = Math.max(maxY, el.y + el.height);
+            });
+
+            const pad = 0.5;
+            const px = m.toPixelX(minX - pad);
+            const py = m.toPixelY(maxY + pad);
+            const pw = m.toPixelW(maxX - minX + pad * 2);
+            const ph = m.toPixelH(maxY - minY + pad * 2);
+
+            if (showBorder) {
+                const rect = document.createElementNS(this.ns, 'rect');
+                rect.setAttribute('x', px);
+                rect.setAttribute('y', py);
+                rect.setAttribute('width', pw);
+                rect.setAttribute('height', ph);
+                rect.setAttribute('rx', '5');
+                rect.setAttribute('class', 'group-border');
+                g.appendChild(rect);
+            }
+
+            if (showLabel && label) {
+                const t = document.createElementNS(this.ns, 'text');
+                t.setAttribute('x', px + 5);
+                t.setAttribute('y', py - 5);
+                t.setAttribute('class', 'group-label-text');
+                t.textContent = label;
+                g.appendChild(t);
+            }
+        });
     }
 
     /* ---- Rotation Handle ---- */

@@ -10,7 +10,8 @@ import {
     subscribeElements, updateElementPosition, resetElements, seedDefaults,
     createElement, updateElement, deleteElement,
     subscribeLegends, createLegend, updateLegend, deleteLegend, seedLegends,
-    subscribeRoomConfig, createRoomConfig, updateRoomConfig
+    subscribeRoomConfig, createRoomConfig, updateRoomConfig,
+    subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta
 } from './db.js';
 
 const SVG_WIDTH = 740;
@@ -19,6 +20,7 @@ const SVG_HEIGHT = 600;
 /* ---- State ---- */
 let elements = [];
 let legends = [];
+let groupMetas = [];
 let roomConfigDbId = null;
 let selectedIds = new Set();
 let editMode = false;
@@ -122,6 +124,14 @@ subscribeLegends((resp) => {
     syncElementTypes();
     buildLegend();
     populateTypeSelect();
+    renderer.render(elements);
+    restoreSelection();
+});
+
+subscribeGroups((resp) => {
+    if (resp.error) return;
+    groupMetas = resp.data || [];
+    renderer.groupMetas = groupMetas;
     renderer.render(elements);
     restoreSelection();
 });
@@ -476,6 +486,18 @@ document.getElementById('btn-delete-selected').addEventListener('click', () => {
 
 document.getElementById('btn-group-elements').addEventListener('click', () => {
     if (selectedIds.size < 2) return;
+    document.getElementById('input-group-label').value = '';
+    document.getElementById('input-group-border').checked = true;
+    document.getElementById('input-group-label-visible').checked = true;
+    openModal('modal-group');
+});
+
+document.getElementById('btn-save-group').addEventListener('click', () => {
+    if (selectedIds.size < 2) return;
+    const label = document.getElementById('input-group-label').value.trim();
+    const showBorder = document.getElementById('input-group-border').checked;
+    const showLabel = document.getElementById('input-group-label-visible').checked;
+
     const gid = `group-${Date.now()}`;
     for (const id of selectedIds) {
         const el = elements.find(e => e.id === id);
@@ -483,15 +505,47 @@ document.getElementById('btn-group-elements').addEventListener('click', () => {
             updateElement(el._dbId, { groupId: gid });
         }
     }
+    createGroup({ groupId: gid, label, showBorder, showLabel });
+    closeAllModals();
 });
 
 document.getElementById('btn-ungroup-elements').addEventListener('click', () => {
+    const groupIdsToRemove = new Set();
     for (const id of selectedIds) {
         const el = elements.find(e => e.id === id);
         if (el && el._dbId && el.groupId) {
+            groupIdsToRemove.add(el.groupId);
             updateElement(el._dbId, { groupId: '' });
         }
     }
+    for (const gid of groupIdsToRemove) {
+        const meta = groupMetas.find(g => g.groupId === gid);
+        if (meta) deleteGroupMeta(meta.id);
+    }
+});
+
+/* ======== Inline Group Config ======== */
+
+function getCurrentGroupMeta() {
+    const selEls = [...selectedIds].map(id => elements.find(e => e.id === id)).filter(Boolean);
+    const gids = [...new Set(selEls.filter(e => e.groupId).map(e => e.groupId))];
+    if (gids.length !== 1) return null;
+    return groupMetas.find(g => g.groupId === gids[0]) || null;
+}
+
+document.getElementById('group-label-input').addEventListener('change', (e) => {
+    const meta = getCurrentGroupMeta();
+    if (meta) updateGroupMeta(meta.id, { label: e.target.value.trim() });
+});
+
+document.getElementById('group-show-border').addEventListener('change', (e) => {
+    const meta = getCurrentGroupMeta();
+    if (meta) updateGroupMeta(meta.id, { showBorder: e.target.checked });
+});
+
+document.getElementById('group-show-label').addEventListener('change', (e) => {
+    const meta = getCurrentGroupMeta();
+    if (meta) updateGroupMeta(meta.id, { showLabel: e.target.checked });
 });
 
 /* ======== Legend List (Sidebar) ======== */
@@ -867,21 +921,30 @@ function updateSelectionPanel() {
         const groupStatus = document.getElementById('sel-group-status');
         const btnGroup = document.getElementById('btn-group-elements');
         const btnUngroup = document.getElementById('btn-ungroup-elements');
+        const groupConfig = document.getElementById('group-config');
 
         if (allSameGroup) {
             groupRow.style.display = '';
             groupStatus.textContent = 'Grouped';
             btnGroup.style.display = 'none';
             btnUngroup.style.display = '';
+
+            const meta = groupMetas.find(g => g.groupId === selEls[0].groupId);
+            groupConfig.style.display = '';
+            document.getElementById('group-label-input').value = meta ? (meta.label || '') : '';
+            document.getElementById('group-show-border').checked = meta ? meta.showBorder !== false : true;
+            document.getElementById('group-show-label').checked = meta ? meta.showLabel !== false : true;
         } else if (hasGrouped) {
             groupRow.style.display = '';
             groupStatus.textContent = 'Mixed';
             btnGroup.style.display = '';
             btnUngroup.style.display = '';
+            groupConfig.style.display = 'none';
         } else {
             groupRow.style.display = 'none';
             btnGroup.style.display = '';
             btnUngroup.style.display = 'none';
+            groupConfig.style.display = 'none';
         }
         return;
     }

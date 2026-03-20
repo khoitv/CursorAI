@@ -388,6 +388,77 @@ html, body {
     pointer-events: none;
 }
 
+/* Group Overlays */
+
+.group-border {
+    fill: rgba(59, 130, 246, 0.04);
+    stroke: rgba(59, 130, 246, 0.35);
+    stroke-width: 1.2;
+    stroke-dasharray: 6,4;
+    pointer-events: none;
+}
+
+.group-label-text {
+    font-size: 10px;
+    fill: rgba(59, 130, 246, 0.7);
+    font-weight: 700;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    pointer-events: none;
+}
+
+/* Group Config (sidebar) */
+
+.group-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.form-group-compact {
+    gap: 4px;
+}
+
+.form-group-compact label {
+    font-size: 11px;
+}
+
+.input-sm {
+    padding: 5px 8px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    width: 100%;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input-sm:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+    user-select: none;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 /* Selection Marquee */
 
 .selection-marquee {

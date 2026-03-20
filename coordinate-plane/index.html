@@ -87,6 +87,20 @@
                 </div>
                 <div class="info-row"><span class="info-label">Selected</span><span class="info-value" id="sel-count">0 elements</span></div>
                 <div class="info-row" id="sel-group-row" style="display:none;"><span class="info-label">Group</span><span class="info-value" id="sel-group-status">—</span></div>
+                <div id="group-config" class="group-config" style="display:none;">
+                    <div class="form-group form-group-compact">
+                        <label for="group-label-input">Label</label>
+                        <input type="text" id="group-label-input" class="input-sm" placeholder="Group name">
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="group-show-border" checked>
+                        <span>Show Border</span>
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="group-show-label" checked>
+                        <span>Show Label</span>
+                    </label>
+                </div>
                 <div class="selection-actions">
                     <button class="btn btn-ghost btn-sm" id="btn-group-elements" title="Group selected elements">
                         <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5.5 4H4a2 2 0 0 0 0 4h1.5M8.5 4H10a2 2 0 0 1 0 4H8.5M5 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
@@ -271,6 +285,38 @@
             <div class="modal-footer">
                 <button class="btn btn-ghost" data-close>Cancel</button>
                 <button class="btn btn-primary" id="btn-save-element">Save</button>
+            </div>
+        </div>
+
+        <!-- Create Group Modal -->
+        <div id="modal-group" class="modal" data-modal="group">
+            <div class="modal-header">
+                <h3>Create Group</h3>
+                <button class="modal-close" data-close>
+                    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-group-label">Group Label</label>
+                    <input type="text" id="input-group-label" placeholder="e.g. Workstation Area">
+                </div>
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="input-group-border" checked>
+                        <span>Show Border</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="input-group-label-visible" checked>
+                        <span>Show Label</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="btn-save-group">Create Group</button>
             </div>
         </div>
     </div>

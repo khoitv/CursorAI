@@ -149,6 +149,38 @@ export function seedLegends(legends) {
     db.transact(txs);
 }
 
+/* ---- Groups ---- */
+
+export function subscribeGroups(callback) {
+    return db.subscribeQuery({ groups: {} }, (resp) => {
+        if (resp.error) {
+            console.error('InstantDB groups error:', resp.error.message);
+            callback({ error: resp.error });
+            return;
+        }
+        if (resp.data) {
+            callback({ data: resp.data.groups });
+        }
+    });
+}
+
+export function createGroup(group) {
+    db.transact(db.tx.groups[instantId()].update({
+        groupId: group.groupId,
+        label: group.label,
+        showBorder: group.showBorder !== false,
+        showLabel: group.showLabel !== false,
+    }));
+}
+
+export function updateGroupMeta(dbId, updates) {
+    db.transact(db.tx.groups[dbId].update(updates));
+}
+
+export function deleteGroupMeta(dbId) {
+    db.transact(db.tx.groups[dbId].delete());
+}
+
 /* ---- Room Configuration ---- */
 
 export function subscribeRoomConfig(callback) {
