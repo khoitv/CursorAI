@@ -388,6 +388,16 @@ html, body {
     pointer-events: none;
 }
 
+/* Selection Marquee */
+
+.selection-marquee {
+    fill: rgba(59, 130, 246, 0.08);
+    stroke: rgba(59, 130, 246, 0.5);
+    stroke-width: 1;
+    stroke-dasharray: 5,3;
+    pointer-events: none;
+}
+
 .rotation-label {
     font-size: 10px;
     fill: var(--accent);

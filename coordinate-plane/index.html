@@ -80,9 +80,32 @@
                 </div>
             </div>
 
+            <!-- Multi Selection -->
+            <div class="sidebar-section" id="multi-selection-panel" style="display:none;">
+                <div class="section-header">
+                    <h2>Selection</h2>
+                </div>
+                <div class="info-row"><span class="info-label">Selected</span><span class="info-value" id="sel-count">0 elements</span></div>
+                <div class="info-row" id="sel-group-row" style="display:none;"><span class="info-label">Group</span><span class="info-value" id="sel-group-status">—</span></div>
+                <div class="selection-actions">
+                    <button class="btn btn-ghost btn-sm" id="btn-group-elements" title="Group selected elements">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5.5 4H4a2 2 0 0 0 0 4h1.5M8.5 4H10a2 2 0 0 1 0 4H8.5M5 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+                        <span>Group</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="btn-ungroup-elements" title="Ungroup selected elements" style="display:none;">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5.5 4H4a2 2 0 0 0 0 4h1.5M8.5 4H10a2 2 0 0 1 0 4H8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+                        <span>Ungroup</span>
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="btn-delete-selected" title="Delete all selected elements">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 4h8M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M4 4v7a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        <span>Delete Selected</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- No Selection -->
             <div class="sidebar-section" id="no-selection-panel">
-                <p class="hint">Click an element on the floor plan to see its details.</p>
+                <p class="hint">Click an element to select. Ctrl+click or drag an area to multi-select.</p>
             </div>
 
             <!-- Add Element -->

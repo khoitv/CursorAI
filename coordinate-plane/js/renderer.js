@@ -127,6 +127,7 @@ export class FloorPlanRenderer {
             const group = document.createElementNS(this.ns, 'g');
             group.setAttribute('class', 'floor-element');
             group.dataset.id = door.id;
+            if (door.groupId) group.dataset.group = door.groupId;
 
             const px = m.toPixelX(door.x);
             const py = m.toPixelY(door.y + door.height);
@@ -178,6 +179,7 @@ export class FloorPlanRenderer {
         const group = document.createElementNS(this.ns, 'g');
         group.setAttribute('class', 'floor-element');
         group.dataset.id = el.id;
+        if (el.groupId) group.dataset.group = el.groupId;
 
         const px = m.toPixelX(el.x);
         const py = m.toPixelY(el.y + el.height);
@@ -214,6 +216,7 @@ export class FloorPlanRenderer {
         const group = document.createElementNS(this.ns, 'g');
         group.setAttribute('class', 'floor-element');
         group.dataset.id = el.id;
+        if (el.groupId) group.dataset.group = el.groupId;
 
         const px = m.toPixelX(el.x);
         const py = m.toPixelY(el.y + el.height);
@@ -407,6 +410,21 @@ export class FloorPlanRenderer {
 
     clearSelection() {
         this.layers.selection.innerHTML = '';
+    }
+
+    drawMarquee(x1, y1, x2, y2) {
+        this.layers.selection.innerHTML = '';
+        const x = Math.min(x1, x2);
+        const y = Math.min(y1, y2);
+        const w = Math.abs(x2 - x1);
+        const h = Math.abs(y2 - y1);
+        const r = document.createElementNS(this.ns, 'rect');
+        r.setAttribute('x', x);
+        r.setAttribute('y', y);
+        r.setAttribute('width', w);
+        r.setAttribute('height', h);
+        r.setAttribute('class', 'selection-marquee');
+        this.layers.selection.appendChild(r);
     }
 
     drawRotationHandle(el) {

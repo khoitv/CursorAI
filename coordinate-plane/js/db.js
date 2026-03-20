@@ -29,6 +29,7 @@ export function subscribeElements(callback) {
                     width: record.width,
                     height: record.height,
                     rotation: record.rotation || 0,
+                    groupId: record.groupId || '',
                     _dbId: record.id,
                 };
                 if (record.swing) el.swing = record.swing;
@@ -49,6 +50,7 @@ export function createElement(el) {
         width: el.width,
         height: el.height,
         rotation: el.rotation || 0,
+        groupId: el.groupId || '',
     };
     if (el.swing) record.swing = el.swing;
     db.transact(db.tx.elements[instantId()].update(record));

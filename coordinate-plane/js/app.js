@@ -1,6 +1,7 @@
 /**
  * Main application: wires up rendering, interactivity, and InstantDB persistence.
  * Handles CRUD for elements, legends, and room configuration.
+ * Supports multi-selection via Ctrl+click and marquee sweep.
  */
 
 import { ROOM, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper } from './coordinates.js';
@@ -19,15 +20,16 @@ const SVG_HEIGHT = 600;
 let elements = [];
 let legends = [];
 let roomConfigDbId = null;
-let selectedId = null;
+let selectedIds = new Set();
 let editMode = false;
 let dragging = null;
+let rotating = null;
+let marquee = null;
 let seededElements = false;
 let seededLegends = false;
 let seededRoom = false;
 let editingLegendId = null;
 let editingElementDbId = null;
-let rotating = null;
 
 /* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
@@ -35,12 +37,14 @@ const container = document.getElementById('canvas-container');
 const tooltip = document.getElementById('tooltip');
 
 const selPanel = document.getElementById('selection-panel');
+const multiSelPanel = document.getElementById('multi-selection-panel');
 const noSelPanel = document.getElementById('no-selection-panel');
 const selName = document.getElementById('sel-name');
 const selType = document.getElementById('sel-type');
 const selPos = document.getElementById('sel-pos');
 const selSize = document.getElementById('sel-size');
 const selRotation = document.getElementById('sel-rotation');
+const selCount = document.getElementById('sel-count');
 const mouseCoords = document.getElementById('mouse-coords');
 
 const roomWDisplay = document.getElementById('room-w-display');
@@ -188,7 +192,7 @@ btnEdit.addEventListener('click', () => {
 
 btnReset.addEventListener('click', () => {
     if (confirm('Reset all elements to their default positions?')) {
-        selectedId = null;
+        clearSelection();
         updateSelectionPanel();
         resetElements(elements, DEFAULT_ELEMENTS);
     }
@@ -389,8 +393,8 @@ document.getElementById('btn-add-element').addEventListener('click', () => {
 });
 
 document.getElementById('btn-edit-element').addEventListener('click', () => {
-    if (!selectedId) return;
-    const el = elements.find(e => e.id === selectedId);
+    if (selectedIds.size !== 1) return;
+    const el = elements.find(e => e.id === [...selectedIds][0]);
     if (!el) return;
     editingElementDbId = el._dbId;
     document.getElementById('element-modal-title').textContent = 'Edit Element';
@@ -426,39 +430,67 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
 
     if (editingElementDbId) {
         updateElement(editingElementDbId, {
-            label,
-            type,
-            x: clampedX,
-            y: clampedY,
-            width: w,
-            height: h,
+            label, type,
+            x: clampedX, y: clampedY,
+            width: w, height: h,
             rotation: normRot,
         });
     } else {
         createElement({
             id: `el-${Date.now()}`,
-            type,
-            label,
-            x: clampedX,
-            y: clampedY,
-            width: w,
-            height: h,
+            type, label,
+            x: clampedX, y: clampedY,
+            width: w, height: h,
             rotation: normRot,
         });
     }
     closeAllModals();
 });
 
-/* ======== Delete Element ======== */
+/* ======== Delete Elements ======== */
 
 document.getElementById('btn-delete-element').addEventListener('click', () => {
-    if (!selectedId) return;
-    const el = elements.find(e => e.id === selectedId);
+    if (selectedIds.size !== 1) return;
+    const el = elements.find(e => e.id === [...selectedIds][0]);
     if (!el) return;
     if (confirm(`Delete "${el.label}"?`)) {
         deleteElement(el._dbId);
-        selectedId = null;
+        clearSelection();
         updateSelectionPanel();
+    }
+});
+
+document.getElementById('btn-delete-selected').addEventListener('click', () => {
+    if (selectedIds.size < 2) return;
+    if (confirm(`Delete ${selectedIds.size} selected elements?`)) {
+        for (const id of selectedIds) {
+            const el = elements.find(e => e.id === id);
+            if (el && el._dbId) deleteElement(el._dbId);
+        }
+        clearSelection();
+        updateSelectionPanel();
+    }
+});
+
+/* ======== Group / Ungroup ======== */
+
+document.getElementById('btn-group-elements').addEventListener('click', () => {
+    if (selectedIds.size < 2) return;
+    const gid = `group-${Date.now()}`;
+    for (const id of selectedIds) {
+        const el = elements.find(e => e.id === id);
+        if (el && el._dbId) {
+            updateElement(el._dbId, { groupId: gid });
+        }
+    }
+});
+
+document.getElementById('btn-ungroup-elements').addEventListener('click', () => {
+    for (const id of selectedIds) {
+        const el = elements.find(e => e.id === id);
+        if (el && el._dbId && el.groupId) {
+            updateElement(el._dbId, { groupId: '' });
+        }
     }
 });
 
@@ -523,29 +555,26 @@ svgEl.addEventListener('mousemove', (e) => {
         mouseCoords.textContent = '\u2014';
     }
 
-    const target = e.target.closest('.floor-element');
-    if (target && !dragging && !rotating) {
-        const el = elements.find(el => el.id === target.dataset.id);
+    /* -- Tooltip -- */
+    const hovered = e.target.closest('.floor-element');
+    if (hovered && !dragging && !rotating && !marquee) {
+        const el = elements.find(el => el.id === hovered.dataset.id);
         if (el) {
             tooltip.textContent = `${el.label} (${el.x}, ${el.y})`;
             tooltip.style.display = 'block';
             tooltip.style.left = (e.clientX - container.getBoundingClientRect().left + 12) + 'px';
             tooltip.style.top = (e.clientY - container.getBoundingClientRect().top - 10) + 'px';
         }
-    } else if (!rotating) {
+    } else {
         tooltip.style.display = 'none';
     }
 
+    /* -- Rotating -- */
     if (rotating) {
-        tooltip.style.display = 'none';
         const el = elements.find(el => el.id === rotating.id);
         if (el) {
             let angle = Math.atan2(pt.x - rotating.centerX, rotating.centerY - pt.y) * (180 / Math.PI);
-            if (e.shiftKey) {
-                angle = Math.round(angle / 15) * 15;
-            } else {
-                angle = Math.round(angle);
-            }
+            angle = e.shiftKey ? Math.round(angle / 15) * 15 : Math.round(angle);
             el.rotation = ((angle % 360) + 360) % 360;
             renderer.render(elements);
             restoreSelection();
@@ -555,24 +584,43 @@ svgEl.addEventListener('mousemove', (e) => {
         return;
     }
 
+    /* -- Marquee -- */
+    if (marquee) {
+        renderer.drawMarquee(marquee.startX, marquee.startY, pt.x, pt.y);
+        return;
+    }
+
+    /* -- Dragging -- */
     if (dragging) {
-        const el = elements.find(el => el.id === dragging.id);
-        if (el) {
-            el.x = Math.round((mapper.toLogicalX(pt.x) - dragging.offsetX) * 2) / 2;
-            el.y = Math.round((mapper.toLogicalY(pt.y) - dragging.offsetY) * 2) / 2;
-            el.x = Math.max(0, Math.min(el.x, ROOM.width - el.width));
-            el.y = Math.max(0, Math.min(el.y, ROOM.height - el.height));
-            renderer.render(elements);
-            restoreSelection();
-            showRotationHandle();
-            updateSelectionPanel();
+        dragging.moved = true;
+        const initPrimary = dragging.initPositions.get(dragging.primaryId);
+        const newX = Math.round((mapper.toLogicalX(pt.x) - dragging.offsetX) * 2) / 2;
+        const newY = Math.round((mapper.toLogicalY(pt.y) - dragging.offsetY) * 2) / 2;
+        const dx = newX - initPrimary.x;
+        const dy = newY - initPrimary.y;
+
+        for (const [id, init] of dragging.initPositions) {
+            const el = elements.find(e => e.id === id);
+            if (el) {
+                el.x = Math.round((init.x + dx) * 2) / 2;
+                el.y = Math.round((init.y + dy) * 2) / 2;
+                el.x = Math.max(0, Math.min(el.x, ROOM.width - el.width));
+                el.y = Math.max(0, Math.min(el.y, ROOM.height - el.height));
+            }
         }
+        renderer.render(elements);
+        restoreSelection();
+        showRotationHandle();
+        updateSelectionPanel();
     }
 });
 
 svgEl.addEventListener('mousedown', (e) => {
-    if (editMode && e.target.closest('.rotation-handle')) {
-        const el = elements.find(e => e.id === selectedId);
+    const isCtrl = e.ctrlKey || e.metaKey;
+
+    /* -- Rotation handle (single selection, edit mode) -- */
+    if (editMode && selectedIds.size === 1 && e.target.closest('.rotation-handle')) {
+        const el = elements.find(el => el.id === [...selectedIds][0]);
         if (el) {
             rotating = {
                 id: el.id,
@@ -584,29 +632,79 @@ svgEl.addEventListener('mousedown', (e) => {
         }
     }
 
+    /* -- Click on element -- */
     const target = e.target.closest('.floor-element');
     if (target) {
         const id = target.dataset.id;
-        selectElement(id);
+        const clickedEl = elements.find(el => el.id === id);
+        const groupMembers = (clickedEl && clickedEl.groupId)
+            ? elements.filter(el => el.groupId === clickedEl.groupId)
+            : null;
 
-        if (editMode) {
+        if (isCtrl) {
+            if (groupMembers) {
+                const allIn = groupMembers.every(m => selectedIds.has(m.id));
+                if (allIn) {
+                    groupMembers.forEach(m => removeFromSelection(m.id));
+                } else {
+                    groupMembers.forEach(m => addToSelection(m.id));
+                }
+                showRotationHandle();
+                updateSelectionPanel();
+            } else {
+                toggleSelection(id);
+            }
+        } else {
+            if (groupMembers) {
+                if (!groupMembers.every(m => selectedIds.has(m.id))) {
+                    clearSelection();
+                    groupMembers.forEach(m => addToSelection(m.id));
+                }
+            } else if (!selectedIds.has(id)) {
+                clearSelection();
+                addToSelection(id);
+            }
+        }
+
+        showRotationHandle();
+        updateSelectionPanel();
+
+        if (editMode && !isCtrl && selectedIds.has(id)) {
             const pt = svgPoint(e);
             const el = elements.find(el => el.id === id);
             if (el) {
+                const initPositions = new Map();
+                for (const selId of selectedIds) {
+                    const selEl = elements.find(e => e.id === selId);
+                    if (selEl) initPositions.set(selId, { x: selEl.x, y: selEl.y });
+                }
                 dragging = {
-                    id: id,
+                    primaryId: id,
                     offsetX: mapper.toLogicalX(pt.x) - el.x,
-                    offsetY: mapper.toLogicalY(pt.y) - el.y
+                    offsetY: mapper.toLogicalY(pt.y) - el.y,
+                    initPositions,
+                    moved: false,
                 };
                 e.preventDefault();
             }
         }
-    } else {
-        deselectAll();
+        return;
     }
+
+    /* -- Click on empty area → start marquee -- */
+    const pt = svgPoint(e);
+    marquee = { startX: pt.x, startY: pt.y };
+    if (!isCtrl) {
+        clearSelection();
+        updateSelectionPanel();
+    }
+    e.preventDefault();
 });
 
-svgEl.addEventListener('mouseup', () => {
+svgEl.addEventListener('mouseup', (e) => {
+    const isCtrl = e.ctrlKey || e.metaKey;
+
+    /* -- Rotation -- */
     if (rotating) {
         const el = elements.find(el => el.id === rotating.id);
         if (el && el._dbId) {
@@ -615,10 +713,40 @@ svgEl.addEventListener('mouseup', () => {
         rotating = null;
         return;
     }
+
+    /* -- Marquee -- */
+    if (marquee) {
+        const pt = svgPoint(e);
+        const dx = Math.abs(pt.x - marquee.startX);
+        const dy = Math.abs(pt.y - marquee.startY);
+
+        if (dx > 3 || dy > 3) {
+            const hits = getElementsInRect(marquee.startX, marquee.startY, pt.x, pt.y);
+            hits.forEach(el => addToSelection(el.id));
+            expandGroupsInSelection();
+        }
+
+        marquee = null;
+        renderer.clearSelection();
+        showRotationHandle();
+        updateSelectionPanel();
+        return;
+    }
+
+    /* -- Dragging -- */
     if (dragging) {
-        const el = elements.find(el => el.id === dragging.id);
-        if (el && el._dbId) {
-            updateElementPosition(el._dbId, el.x, el.y);
+        if (dragging.moved) {
+            for (const [id] of dragging.initPositions) {
+                const el = elements.find(e => e.id === id);
+                if (el && el._dbId) {
+                    updateElementPosition(el._dbId, el.x, el.y);
+                }
+            }
+        } else if (!isCtrl && selectedIds.size > 1) {
+            clearSelection();
+            addToSelection(dragging.primaryId);
+            showRotationHandle();
+            updateSelectionPanel();
         }
         dragging = null;
     }
@@ -626,59 +754,94 @@ svgEl.addEventListener('mouseup', () => {
 
 svgEl.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+
     if (rotating) {
         const el = elements.find(el => el.id === rotating.id);
-        if (el && el._dbId) {
-            updateElement(el._dbId, { rotation: el.rotation || 0 });
-        }
+        if (el && el._dbId) updateElement(el._dbId, { rotation: el.rotation || 0 });
         rotating = null;
     }
+
+    if (marquee) {
+        marquee = null;
+        renderer.clearSelection();
+        showRotationHandle();
+    }
+
     if (dragging) {
-        const el = elements.find(el => el.id === dragging.id);
-        if (el && el._dbId) {
-            updateElementPosition(el._dbId, el.x, el.y);
+        if (dragging.moved) {
+            for (const [id] of dragging.initPositions) {
+                const el = elements.find(e => e.id === id);
+                if (el && el._dbId) updateElementPosition(el._dbId, el.x, el.y);
+            }
         }
         dragging = null;
     }
 });
 
-/* ======== Selection ======== */
+/* ======== Selection Helpers ======== */
 
-function selectElement(id) {
-    selectedId = id;
-    document.querySelectorAll('.floor-element').forEach(g => g.classList.remove('selected'));
+function addToSelection(id) {
+    selectedIds.add(id);
     const el = svgEl.querySelector(`.floor-element[data-id="${id}"]`);
     if (el) el.classList.add('selected');
+}
+
+function removeFromSelection(id) {
+    selectedIds.delete(id);
+    const el = svgEl.querySelector(`.floor-element[data-id="${id}"]`);
+    if (el) el.classList.remove('selected');
+}
+
+function toggleSelection(id) {
+    if (selectedIds.has(id)) {
+        removeFromSelection(id);
+    } else {
+        addToSelection(id);
+    }
     showRotationHandle();
     updateSelectionPanel();
 }
 
-function deselectAll() {
-    selectedId = null;
-    document.querySelectorAll('.floor-element').forEach(g => g.classList.remove('selected'));
+function clearSelection() {
+    selectedIds.clear();
+    document.querySelectorAll('.floor-element.selected').forEach(g => g.classList.remove('selected'));
     renderer.clearSelection();
-    updateSelectionPanel();
+}
+
+function expandGroupsInSelection() {
+    const toAdd = [];
+    for (const id of selectedIds) {
+        const el = elements.find(e => e.id === id);
+        if (el && el.groupId) {
+            elements.filter(e => e.groupId === el.groupId && !selectedIds.has(e.id))
+                .forEach(e => toAdd.push(e.id));
+        }
+    }
+    toAdd.forEach(id => addToSelection(id));
 }
 
 function restoreSelection() {
-    if (selectedId) {
-        const el = svgEl.querySelector(`.floor-element[data-id="${selectedId}"]`);
+    for (const id of selectedIds) {
+        const el = svgEl.querySelector(`.floor-element[data-id="${id}"]`);
         if (el) el.classList.add('selected');
     }
 }
 
 function showRotationHandle() {
     renderer.clearSelection();
-    if (!editMode || !selectedId) return;
-    const el = elements.find(e => e.id === selectedId);
+    if (!editMode || selectedIds.size !== 1) return;
+    const el = elements.find(e => e.id === [...selectedIds][0]);
     if (el) renderer.drawRotationHandle(el);
 }
 
 function updateSelectionPanel() {
-    if (selectedId) {
-        const el = elements.find(e => e.id === selectedId);
+    const count = selectedIds.size;
+
+    if (count === 1) {
+        const el = elements.find(e => e.id === [...selectedIds][0]);
         if (el) {
             selPanel.style.display = '';
+            multiSelPanel.style.display = 'none';
             noSelPanel.style.display = 'none';
             selName.textContent = el.label;
             selType.textContent = ELEMENT_TYPES[el.type]?.label || el.type;
@@ -688,8 +851,61 @@ function updateSelectionPanel() {
             return;
         }
     }
+
+    if (count > 1) {
+        selPanel.style.display = 'none';
+        multiSelPanel.style.display = '';
+        noSelPanel.style.display = 'none';
+        selCount.textContent = `${count} elements`;
+
+        const selEls = [...selectedIds].map(id => elements.find(e => e.id === id)).filter(Boolean);
+        const hasGrouped = selEls.some(e => e.groupId);
+        const allSameGroup = hasGrouped && selEls.every(e => e.groupId) &&
+            new Set(selEls.map(e => e.groupId)).size === 1;
+
+        const groupRow = document.getElementById('sel-group-row');
+        const groupStatus = document.getElementById('sel-group-status');
+        const btnGroup = document.getElementById('btn-group-elements');
+        const btnUngroup = document.getElementById('btn-ungroup-elements');
+
+        if (allSameGroup) {
+            groupRow.style.display = '';
+            groupStatus.textContent = 'Grouped';
+            btnGroup.style.display = 'none';
+            btnUngroup.style.display = '';
+        } else if (hasGrouped) {
+            groupRow.style.display = '';
+            groupStatus.textContent = 'Mixed';
+            btnGroup.style.display = '';
+            btnUngroup.style.display = '';
+        } else {
+            groupRow.style.display = 'none';
+            btnGroup.style.display = '';
+            btnUngroup.style.display = 'none';
+        }
+        return;
+    }
+
     selPanel.style.display = 'none';
+    multiSelPanel.style.display = 'none';
     noSelPanel.style.display = '';
+}
+
+/* ======== Hit Testing ======== */
+
+function getElementsInRect(sx1, sy1, sx2, sy2) {
+    const left = Math.min(sx1, sx2);
+    const right = Math.max(sx1, sx2);
+    const top = Math.min(sy1, sy2);
+    const bottom = Math.max(sy1, sy2);
+
+    return elements.filter(el => {
+        const ex0 = mapper.toPixelX(el.x);
+        const ey0 = mapper.toPixelY(el.y + el.height);
+        const ex1 = mapper.toPixelX(el.x + el.width);
+        const ey1 = mapper.toPixelY(el.y);
+        return !(ex1 < left || ex0 > right || ey1 < top || ey0 > bottom);
+    });
 }
 
 /* ======== Utility ======== */
