@@ -27,6 +27,10 @@ let editMode = false;
 let dragging = null;
 let rotating = null;
 let marquee = null;
+let panning = null;
+let panMode = false;
+let spaceHeld = false;
+let viewBox = { x: 0, y: 0, w: SVG_WIDTH, h: SVG_HEIGHT };
 let seededElements = false;
 let seededLegends = false;
 let seededRoom = false;
@@ -83,14 +87,80 @@ function createRenderer(m) {
 
 function rebuildRenderer() {
     const opts = { ...renderer.options };
+    const gm = renderer.groupMetas;
     mapper = createMapper();
     svgEl.innerHTML = '';
     renderer = createRenderer(mapper);
     Object.assign(renderer.options, opts);
+    renderer.groupMetas = gm;
     renderer.init();
     renderer.render(elements);
     restoreSelection();
+    resetZoom();
 }
+
+/* ---- Zoom / Pan ---- */
+
+function updateViewBox() {
+    const minW = SVG_WIDTH / 8;
+    const maxW = SVG_WIDTH * 4;
+    viewBox.w = Math.max(minW, Math.min(maxW, viewBox.w));
+    viewBox.h = viewBox.w * SVG_HEIGHT / SVG_WIDTH;
+    svgEl.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+
+    const pct = Math.round(SVG_WIDTH / viewBox.w * 100);
+    document.getElementById('zoom-level').textContent = `${pct}%`;
+
+    const btnPan = document.getElementById('btn-pan-mode');
+    const panSep = document.getElementById('pan-sep');
+    const notDefault = pct !== 100;
+    btnPan.style.display = notDefault ? '' : 'none';
+    panSep.style.display = notDefault ? '' : 'none';
+    if (!notDefault && panMode) setPanMode(false);
+}
+
+function zoomAtPoint(factor, svgX, svgY) {
+    const nx = (svgX - viewBox.x) / viewBox.w;
+    const ny = (svgY - viewBox.y) / viewBox.h;
+    viewBox.w /= factor;
+    viewBox.h /= factor;
+    viewBox.x = svgX - nx * viewBox.w;
+    viewBox.y = svgY - ny * viewBox.h;
+    updateViewBox();
+}
+
+function resetZoom() {
+    viewBox = { x: 0, y: 0, w: SVG_WIDTH, h: SVG_HEIGHT };
+    if (panMode) setPanMode(false);
+    updateViewBox();
+}
+
+function setPanMode(on) {
+    panMode = on;
+    document.getElementById('btn-pan-mode').classList.toggle('active', on);
+    svgEl.classList.toggle('pan-ready', on);
+}
+
+container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const pt = svgPoint(e);
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    zoomAtPoint(factor, pt.x, pt.y);
+}, { passive: false });
+
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+    zoomAtPoint(1.3, viewBox.x + viewBox.w / 2, viewBox.y + viewBox.h / 2);
+});
+
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+    zoomAtPoint(1 / 1.3, viewBox.x + viewBox.w / 2, viewBox.y + viewBox.h / 2);
+});
+
+document.getElementById('btn-zoom-fit').addEventListener('click', resetZoom);
+
+document.getElementById('btn-pan-mode').addEventListener('click', () => {
+    setPanMode(!panMode);
+});
 
 /* ---- Init ---- */
 renderer.init();
@@ -248,6 +318,20 @@ document.querySelectorAll('[data-close]').forEach(btn => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllModals();
+    if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        if (!spaceHeld) {
+            spaceHeld = true;
+            svgEl.classList.add('pan-ready');
+        }
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+        spaceHeld = false;
+        if (!panMode) svgEl.classList.remove('pan-ready');
+    }
 });
 
 /* ======== Room Settings Modal ======== */
@@ -643,6 +727,17 @@ function legendHoverOut() {
 /* ======== SVG Events ======== */
 
 svgEl.addEventListener('mousemove', (e) => {
+    /* -- Panning -- */
+    if (panning) {
+        const dx = e.clientX - panning.startX;
+        const dy = e.clientY - panning.startY;
+        const rect = svgEl.getBoundingClientRect();
+        viewBox.x = panning.vbX - dx * (viewBox.w / rect.width);
+        viewBox.y = panning.vbY - dy * (viewBox.h / rect.height);
+        updateViewBox();
+        return;
+    }
+
     const pt = svgPoint(e);
     const lx = mapper.toLogicalX(pt.x);
     const ly = mapper.toLogicalY(pt.y);
@@ -714,6 +809,14 @@ svgEl.addEventListener('mousemove', (e) => {
 });
 
 svgEl.addEventListener('mousedown', (e) => {
+    /* -- Middle mouse, Space+left, or Pan mode left → pan -- */
+    if (e.button === 1 || (e.button === 0 && (spaceHeld || panMode))) {
+        panning = { startX: e.clientX, startY: e.clientY, vbX: viewBox.x, vbY: viewBox.y };
+        svgEl.classList.add('panning');
+        e.preventDefault();
+        return;
+    }
+
     const isCtrl = e.ctrlKey || e.metaKey;
 
     /* -- Rotation handle (single selection, edit mode) -- */
@@ -800,6 +903,12 @@ svgEl.addEventListener('mousedown', (e) => {
 });
 
 svgEl.addEventListener('mouseup', (e) => {
+    if (panning) {
+        panning = null;
+        svgEl.classList.remove('panning');
+        return;
+    }
+
     const isCtrl = e.ctrlKey || e.metaKey;
 
     /* -- Rotation -- */
@@ -852,6 +961,11 @@ svgEl.addEventListener('mouseup', (e) => {
 
 svgEl.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+
+    if (panning) {
+        panning = null;
+        svgEl.classList.remove('panning');
+    }
 
     if (rotating) {
         const el = elements.find(el => el.id === rotating.id);

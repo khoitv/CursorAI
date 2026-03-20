@@ -204,6 +204,75 @@ html, body {
     max-height: 100%;
 }
 
+#floor-plan-svg.pan-ready {
+    cursor: grab;
+}
+
+#floor-plan-svg.panning {
+    cursor: grabbing;
+}
+
+/* Zoom Controls */
+
+.zoom-controls {
+    position: absolute;
+    bottom: 32px;
+    left: 32px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    box-shadow: var(--shadow);
+    z-index: 5;
+}
+
+.zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.zoom-btn:hover {
+    background: #f0f1f3;
+    color: var(--text);
+}
+
+.zoom-btn.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.zoom-btn.active:hover {
+    background: var(--accent-hover);
+}
+
+.zoom-level {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 42px;
+    text-align: center;
+    user-select: none;
+}
+
+.zoom-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    margin: 0 2px;
+}
+
 /* ---- Sidebar ---- */
 
 .sidebar {
