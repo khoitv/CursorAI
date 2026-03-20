@@ -17,6 +17,8 @@ export const ELEMENT_TYPES = {
     cluster:   { color: '#10b981', label: 'Student Desks' },
     table:     { color: '#10b981', label: 'Student Table' },
     computer:  { color: '#8b5cf6', label: 'Computer Station' },
+    computerDesk: { color: '#8b5cf6', label: 'Computer Desk' },
+    computerChair: { color: '#7c3aed', label: 'Computer Chair' },
     storage:   { color: '#6b7280', label: 'Student Storage' },
     library:   { color: '#ec4899', label: 'Class Library' },
     zone:      { color: '#06b6d4', label: 'Reading Area' },
@@ -72,27 +74,48 @@ export const DEFAULT_ELEMENTS = [
         width: 3, height: 2.5
     },
 
-    // Computer stations — 3 along left wall
+    // Computer stations — desk + chair as separate elements (3 pairs along left wall)
     {
-        id: 'computer-1',
-        type: 'computer',
-        label: 'Computer Station',
+        id: 'computer-1-desk',
+        type: 'computerDesk',
+        label: 'Computer 1 Desk',
         x: 0.4, y: 22,
         width: 3, height: 2.5
     },
     {
-        id: 'computer-2',
-        type: 'computer',
-        label: 'Computer Station',
+        id: 'computer-1-chair',
+        type: 'computerChair',
+        label: 'Computer 1 Chair',
+        x: 3.45, y: 22.1,
+        width: 0.85, height: 2.3
+    },
+    {
+        id: 'computer-2-desk',
+        type: 'computerDesk',
+        label: 'Computer 2 Desk',
         x: 0.4, y: 18,
         width: 3, height: 2.5
     },
     {
-        id: 'computer-3',
-        type: 'computer',
-        label: 'Computer Station',
+        id: 'computer-2-chair',
+        type: 'computerChair',
+        label: 'Computer 2 Chair',
+        x: 3.45, y: 18.1,
+        width: 0.85, height: 2.3
+    },
+    {
+        id: 'computer-3-desk',
+        type: 'computerDesk',
+        label: 'Computer 3 Desk',
         x: 0.4, y: 14,
         width: 3, height: 2.5
+    },
+    {
+        id: 'computer-3-chair',
+        type: 'computerChair',
+        label: 'Computer 3 Chair',
+        x: 3.45, y: 14.1,
+        width: 0.85, height: 2.3
     },
 
     // Student storage — cubbies along bottom wall

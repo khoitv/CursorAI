@@ -225,6 +225,10 @@ export class FloorPlanRenderer {
             this.drawDeskCluster(group, px, py, pw, ph, typeInfo.color);
         } else if (el.type === 'computer') {
             this.drawComputerStation(group, px, py, pw, ph, typeInfo.color);
+        } else if (el.type === 'computerDesk') {
+            this.drawComputerDesk(group, px, py, pw, ph, typeInfo.color);
+        } else if (el.type === 'computerChair') {
+            this.drawComputerChair(group, px, py, pw, ph, typeInfo.color);
         } else if (el.type === 'storage') {
             this.drawStorageCubbies(group, px, py, pw, ph, typeInfo.color);
         } else if (el.id === 'beanbag-1' || el.id === 'beanbag-2') {
@@ -293,7 +297,19 @@ export class FloorPlanRenderer {
     }
 
     drawComputerStation(group, px, py, pw, ph, color) {
-        // Desk surface
+        this.drawComputerDesk(group, px, py, pw, ph, color);
+        const chairR = Math.min(pw, ph) * 0.2;
+        const chair = document.createElementNS(this.ns, 'circle');
+        chair.setAttribute('cx', px + pw + chairR * 1.5);
+        chair.setAttribute('cy', py + ph / 2);
+        chair.setAttribute('r', chairR);
+        chair.setAttribute('fill', color + '40');
+        chair.setAttribute('stroke', color);
+        chair.setAttribute('stroke-width', '0.8');
+        group.appendChild(chair);
+    }
+
+    drawComputerDesk(group, px, py, pw, ph, color) {
         const r = document.createElementNS(this.ns, 'rect');
         r.setAttribute('x', px);
         r.setAttribute('y', py);
@@ -305,7 +321,6 @@ export class FloorPlanRenderer {
         r.setAttribute('stroke-width', '1.2');
         group.appendChild(r);
 
-        // Monitor
         const mw = pw * 0.4;
         const mh = ph * 0.35;
         const monitor = document.createElementNS(this.ns, 'rect');
@@ -318,11 +333,12 @@ export class FloorPlanRenderer {
         monitor.setAttribute('stroke', color);
         monitor.setAttribute('stroke-width', '0.8');
         group.appendChild(monitor);
+    }
 
-        // Chair
-        const chairR = Math.min(pw, ph) * 0.2;
+    drawComputerChair(group, px, py, pw, ph, color) {
+        const chairR = Math.min(pw, ph) * 0.45;
         const chair = document.createElementNS(this.ns, 'circle');
-        chair.setAttribute('cx', px + pw + chairR * 1.5);
+        chair.setAttribute('cx', px + pw / 2);
         chair.setAttribute('cy', py + ph / 2);
         chair.setAttribute('r', chairR);
         chair.setAttribute('fill', color + '40');
@@ -358,8 +374,6 @@ export class FloorPlanRenderer {
 
         if (el.type === 'door') return;
 
-        
-        if (el.id === 'computer-2' || el.id === 'computer-3') return;
         if (el.id === 'library-2') return;
         if (el.id === 'sofa-side') return;
         if (el.id === 'beanbag-2') return;
