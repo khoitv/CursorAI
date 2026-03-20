@@ -1,0 +1,272 @@
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #e0e3e8;
+    --text: #1a1d23;
+    --text-secondary: #5f6570;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --danger: #ef4444;
+    --sidebar-w: 280px;
+    --header-h: 56px;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,.1), 0 2px 4px rgba(0,0,0,.06);
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+}
+
+.app-header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 24px;
+    box-shadow: var(--shadow);
+    position: relative;
+    z-index: 10;
+}
+
+.app-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar .separator {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+    margin: 0 8px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all .15s ease;
+    user-select: none;
+}
+
+.btn:hover {
+    background: #f5f6f8;
+    color: var(--text);
+}
+
+.btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.btn.active:hover {
+    background: var(--accent-hover);
+}
+
+.app-main {
+    display: flex;
+    height: calc(100vh - var(--header-h));
+}
+
+.canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+#floor-plan-svg {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sidebar-section {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+}
+
+.sidebar-section h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.info-label {
+    color: var(--text-secondary);
+}
+
+.info-value {
+    font-weight: 600;
+}
+
+.hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.tooltip {
+    position: absolute;
+    background: rgba(26, 29, 35, .92);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    transition: opacity .1s;
+}
+
+/* SVG element styles */
+.floor-element {
+    cursor: pointer;
+    transition: opacity .15s;
+}
+
+.floor-element:hover {
+    opacity: .85;
+}
+
+.floor-element.selected rect,
+.floor-element.selected polygon,
+.floor-element.selected path,
+.floor-element.selected ellipse,
+.floor-element.selected circle {
+    stroke: var(--accent) !important;
+    stroke-width: 2.5 !important;
+    stroke-dasharray: none !important;
+}
+
+.edit-mode .floor-element {
+    cursor: move;
+}
+
+.grid-line {
+    stroke: #e8eaed;
+    stroke-width: 0.5;
+}
+
+.grid-line-major {
+    stroke: #d0d4da;
+    stroke-width: 0.8;
+}
+
+.axis-label {
+    font-size: 9px;
+    fill: #9ca3af;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.dim-label {
+    font-size: 10px;
+    fill: #6b7280;
+    font-weight: 600;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.element-label {
+    font-size: 8px;
+    fill: #374151;
+    font-weight: 600;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+.wall {
+    stroke: #374151;
+    stroke-width: 2.5;
+    fill: none;
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        display: none;
+    }
+    .toolbar span {
+        display: none;
+    }
+}
