@@ -3,7 +3,9 @@
  * Draws grid, axes, walls, doors, and all furniture elements.
  */
 
-class FloorPlanRenderer {
+import { ROOM, ELEMENT_TYPES } from './coordinates.js';
+
+export class FloorPlanRenderer {
     constructor(svgElement, mapper, options) {
         this.svg = svgElement;
         this.mapper = mapper;

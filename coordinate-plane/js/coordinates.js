@@ -3,13 +3,13 @@
  * Origin (0,0) is at the bottom-left corner. X runs left-to-right, Y runs bottom-to-top.
  */
 
-const ROOM = {
+export const ROOM = {
     width: 42,
     height: 32,
     unit: 'ft'
 };
 
-const ELEMENT_TYPES = {
+export const ELEMENT_TYPES = {
     wall:      { color: '#374151', label: 'Wall' },
     door:      { color: '#92400e', label: 'Door' },
     whiteboard:{ color: '#6366f1', label: 'Whiteboard' },
@@ -23,7 +23,7 @@ const ELEMENT_TYPES = {
     furniture: { color: '#78716c', label: 'Furniture' }
 };
 
-const DEFAULT_ELEMENTS = [
+export const DEFAULT_ELEMENTS = [
     // Whiteboard — centered along top wall
     {
         id: 'whiteboard',
@@ -192,7 +192,7 @@ const DEFAULT_ELEMENTS = [
 /**
  * Coordinate mapper: converts logical floor plan coordinates to SVG pixel coords.
  */
-class CoordinateMapper {
+export class CoordinateMapper {
     constructor(roomWidth, roomHeight, svgWidth, svgHeight, padding) {
         this.roomW = roomWidth;
         this.roomH = roomHeight;
