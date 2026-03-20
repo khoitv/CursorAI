@@ -32,6 +32,7 @@ let seededLegends = false;
 let seededRoom = false;
 let editingLegendId = null;
 let editingElementDbId = null;
+let activeLegendKey = null;
 
 /* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
@@ -561,6 +562,7 @@ function buildLegend() {
 
         const item = document.createElement('div');
         item.className = 'legend-item';
+        item.dataset.legendKey = l.key;
 
         const swatch = document.createElement('span');
         swatch.className = 'legend-swatch';
@@ -586,6 +588,10 @@ function buildLegend() {
         delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 4h8M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M4 4v7a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>';
         delBtn.addEventListener('click', (e) => { e.stopPropagation(); handleDeleteLegend(l); });
 
+        item.addEventListener('click', () => legendClick(l.key));
+        item.addEventListener('mouseenter', () => legendHoverIn(l.key));
+        item.addEventListener('mouseleave', legendHoverOut);
+
         actions.appendChild(editBtn);
         actions.appendChild(delBtn);
 
@@ -593,6 +599,44 @@ function buildLegend() {
         item.appendChild(label);
         item.appendChild(actions);
         list.appendChild(item);
+    });
+}
+
+/* ======== Legend Click / Hover ======== */
+
+function legendClick(key) {
+    if (activeLegendKey === key) {
+        activeLegendKey = null;
+        clearSelection();
+    } else {
+        activeLegendKey = key;
+        clearSelection();
+        elements.filter(el => el.type === key).forEach(el => addToSelection(el.id));
+        expandGroupsInSelection();
+    }
+    syncActiveLegendItem();
+    showRotationHandle();
+    updateSelectionPanel();
+}
+
+function syncActiveLegendItem() {
+    document.querySelectorAll('.legend-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.legendKey === activeLegendKey);
+    });
+}
+
+function legendHoverIn(key) {
+    svgEl.classList.add('legend-filter');
+    document.querySelectorAll('.floor-element').forEach(g => {
+        const el = elements.find(e => e.id === g.dataset.id);
+        g.classList.toggle('legend-match', el && el.type === key);
+    });
+}
+
+function legendHoverOut() {
+    svgEl.classList.remove('legend-filter');
+    document.querySelectorAll('.floor-element.legend-match').forEach(g => {
+        g.classList.remove('legend-match');
     });
 }
 
@@ -860,6 +904,10 @@ function clearSelection() {
     selectedIds.clear();
     document.querySelectorAll('.floor-element.selected').forEach(g => g.classList.remove('selected'));
     renderer.clearSelection();
+    if (activeLegendKey) {
+        activeLegendKey = null;
+        syncActiveLegendItem();
+    }
 }
 
 function expandGroupsInSelection() {

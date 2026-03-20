@@ -326,6 +326,26 @@ html, body {
     opacity: 1;
 }
 
+.legend-item.active {
+    background: var(--accent-light);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.legend-item.active .legend-actions {
+    opacity: 1;
+}
+
+/* Legend hover → dim non-matching elements on the canvas */
+
+.legend-filter .floor-element {
+    opacity: 0.12 !important;
+    transition: opacity .2s ease;
+}
+
+.legend-filter .floor-element.legend-match {
+    opacity: 1 !important;
+}
+
 /* ---- Tooltip ---- */
 
 .tooltip {
