@@ -15,6 +15,7 @@ const ELEMENT_TYPES = {
     whiteboard:{ color: '#6366f1', label: 'Whiteboard' },
     desk:      { color: '#f59e0b', label: 'Teacher Desk' },
     cluster:   { color: '#10b981', label: 'Student Desks' },
+    table:     { color: '#10b981', label: 'Student Table' },
     computer:  { color: '#8b5cf6', label: 'Computer Station' },
     storage:   { color: '#6b7280', label: 'Student Storage' },
     library:   { color: '#ec4899', label: 'Class Library' },
@@ -41,41 +42,34 @@ const DEFAULT_ELEMENTS = [
         width: 6, height: 4
     },
 
-    // Student desk clusters — 5 clusters of 2×2 tables
+    // Student tables — 4 individual tables
     {
-        id: 'cluster-1',
-        type: 'cluster',
-        label: 'Student Desks',
-        x: 10, y: 21,
-        width: 6, height: 5
+        id: 'table-1',
+        type: 'table',
+        label: 'Table 1',
+        x: 12, y: 21,
+        width: 3, height: 2.5
     },
     {
-        id: 'cluster-2',
-        type: 'cluster',
-        label: 'Student Desks',
-        x: 19, y: 21,
-        width: 6, height: 5
+        id: 'table-2',
+        type: 'table',
+        label: 'Table 2',
+        x: 21, y: 21,
+        width: 3, height: 2.5
     },
     {
-        id: 'cluster-3',
-        type: 'cluster',
-        label: 'Student Desks',
-        x: 28, y: 21,
-        width: 6, height: 5
+        id: 'table-3',
+        type: 'table',
+        label: 'Table 3',
+        x: 12, y: 13,
+        width: 3, height: 2.5
     },
     {
-        id: 'cluster-4',
-        type: 'cluster',
-        label: 'Student Desks',
-        x: 10, y: 13,
-        width: 6, height: 5
-    },
-    {
-        id: 'cluster-5',
-        type: 'cluster',
-        label: 'Student Desks',
-        x: 19, y: 13,
-        width: 6, height: 5
+        id: 'table-4',
+        type: 'table',
+        label: 'Table 4',
+        x: 21, y: 13,
+        width: 3, height: 2.5
     },
 
     // Computer stations — 3 along left wall

@@ -208,7 +208,18 @@ class FloorPlanRenderer {
         const ph = m.toPixelH(el.height);
         const typeInfo = ELEMENT_TYPES[el.type] || { color: '#999' };
 
-        if (el.type === 'cluster') {
+        if (el.type === 'table') {
+            const r = document.createElementNS(this.ns, 'rect');
+            r.setAttribute('x', px);
+            r.setAttribute('y', py);
+            r.setAttribute('width', pw);
+            r.setAttribute('height', ph);
+            r.setAttribute('rx', '3');
+            r.setAttribute('fill', typeInfo.color + '30');
+            r.setAttribute('stroke', typeInfo.color);
+            r.setAttribute('stroke-width', '1.5');
+            group.appendChild(r);
+        } else if (el.type === 'cluster') {
             this.drawDeskCluster(group, px, py, pw, ph, typeInfo.color);
         } else if (el.type === 'computer') {
             this.drawComputerStation(group, px, py, pw, ph, typeInfo.color);
@@ -345,9 +356,7 @@ class FloorPlanRenderer {
 
         if (el.type === 'door') return;
 
-        // Avoid duplicate labels for desk clusters
-        if (el.id === 'cluster-2' || el.id === 'cluster-3' ||
-            el.id === 'cluster-4' || el.id === 'cluster-5') return;
+        
         if (el.id === 'computer-2' || el.id === 'computer-3') return;
         if (el.id === 'library-2') return;
         if (el.id === 'sofa-side') return;
