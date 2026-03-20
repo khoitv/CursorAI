@@ -67,6 +67,7 @@
                 <div class="info-row"><span class="info-label">Type</span><span class="info-value" id="sel-type">—</span></div>
                 <div class="info-row"><span class="info-label">Position</span><span class="info-value" id="sel-pos">—</span></div>
                 <div class="info-row"><span class="info-label">Size</span><span class="info-value" id="sel-size">—</span></div>
+                <div class="info-row"><span class="info-label">Rotation</span><span class="info-value" id="sel-rotation">0°</span></div>
                 <div class="selection-actions">
                     <button class="btn btn-ghost btn-sm" id="btn-edit-element" title="Edit this element">
                         <svg width="14" height="14" viewBox="0 0 14 14"><path d="M10.5 1.5l2 2L4.5 11.5H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
@@ -231,6 +232,16 @@
                     <div class="form-group">
                         <label for="input-el-height">Height</label>
                         <input type="number" id="input-el-height" min="0.5" step="0.5" placeholder="2">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-el-rotation">Rotation</label>
+                    <div class="rotation-input-row">
+                        <input type="range" id="input-el-rotation-slider" min="0" max="360" step="1" value="0">
+                        <div class="rotation-number-wrap">
+                            <input type="number" id="input-el-rotation" min="0" max="360" step="1" placeholder="0">
+                            <span class="rotation-unit">°</span>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -27,6 +27,7 @@ let seededLegends = false;
 let seededRoom = false;
 let editingLegendId = null;
 let editingElementDbId = null;
+let rotating = null;
 
 /* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
@@ -39,6 +40,7 @@ const selName = document.getElementById('sel-name');
 const selType = document.getElementById('sel-type');
 const selPos = document.getElementById('sel-pos');
 const selSize = document.getElementById('sel-size');
+const selRotation = document.getElementById('sel-rotation');
 const mouseCoords = document.getElementById('mouse-coords');
 
 const roomWDisplay = document.getElementById('room-w-display');
@@ -181,6 +183,7 @@ btnEdit.addEventListener('click', () => {
     editMode = !editMode;
     btnEdit.classList.toggle('active');
     svgEl.classList.toggle('edit-mode', editMode);
+    showRotationHandle();
 });
 
 btnReset.addEventListener('click', () => {
@@ -361,6 +364,16 @@ function updateTypeDot() {
 
 elTypeSelect.addEventListener('change', updateTypeDot);
 
+const elRotationSlider = document.getElementById('input-el-rotation-slider');
+const elRotationInput = document.getElementById('input-el-rotation');
+
+elRotationSlider.addEventListener('input', () => {
+    elRotationInput.value = elRotationSlider.value;
+});
+elRotationInput.addEventListener('input', () => {
+    elRotationSlider.value = elRotationInput.value;
+});
+
 document.getElementById('btn-add-element').addEventListener('click', () => {
     editingElementDbId = null;
     document.getElementById('element-modal-title').textContent = 'Add Element';
@@ -369,6 +382,8 @@ document.getElementById('btn-add-element').addEventListener('click', () => {
     document.getElementById('input-el-y').value = '0';
     document.getElementById('input-el-width').value = '3';
     document.getElementById('input-el-height').value = '2';
+    elRotationSlider.value = '0';
+    elRotationInput.value = '0';
     populateTypeSelect();
     openModal('modal-element');
 });
@@ -384,6 +399,8 @@ document.getElementById('btn-edit-element').addEventListener('click', () => {
     document.getElementById('input-el-y').value = el.y;
     document.getElementById('input-el-width').value = el.width;
     document.getElementById('input-el-height').value = el.height;
+    elRotationSlider.value = el.rotation || 0;
+    elRotationInput.value = el.rotation || 0;
     populateTypeSelect();
     elTypeSelect.value = el.type;
     updateTypeDot();
@@ -397,6 +414,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
     const y = parseFloat(document.getElementById('input-el-y').value);
     const w = parseFloat(document.getElementById('input-el-width').value);
     const h = parseFloat(document.getElementById('input-el-height').value);
+    const rot = parseInt(elRotationInput.value) || 0;
 
     if (!label || !type) return;
     if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) return;
@@ -404,6 +422,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
 
     const clampedX = Math.max(0, Math.min(x, ROOM.width - w));
     const clampedY = Math.max(0, Math.min(y, ROOM.height - h));
+    const normRot = ((rot % 360) + 360) % 360;
 
     if (editingElementDbId) {
         updateElement(editingElementDbId, {
@@ -413,6 +432,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
             y: clampedY,
             width: w,
             height: h,
+            rotation: normRot,
         });
     } else {
         createElement({
@@ -423,6 +443,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
             y: clampedY,
             width: w,
             height: h,
+            rotation: normRot,
         });
     }
     closeAllModals();
@@ -503,7 +524,7 @@ svgEl.addEventListener('mousemove', (e) => {
     }
 
     const target = e.target.closest('.floor-element');
-    if (target && !dragging) {
+    if (target && !dragging && !rotating) {
         const el = elements.find(el => el.id === target.dataset.id);
         if (el) {
             tooltip.textContent = `${el.label} (${el.x}, ${el.y})`;
@@ -511,8 +532,27 @@ svgEl.addEventListener('mousemove', (e) => {
             tooltip.style.left = (e.clientX - container.getBoundingClientRect().left + 12) + 'px';
             tooltip.style.top = (e.clientY - container.getBoundingClientRect().top - 10) + 'px';
         }
-    } else {
+    } else if (!rotating) {
         tooltip.style.display = 'none';
+    }
+
+    if (rotating) {
+        tooltip.style.display = 'none';
+        const el = elements.find(el => el.id === rotating.id);
+        if (el) {
+            let angle = Math.atan2(pt.x - rotating.centerX, rotating.centerY - pt.y) * (180 / Math.PI);
+            if (e.shiftKey) {
+                angle = Math.round(angle / 15) * 15;
+            } else {
+                angle = Math.round(angle);
+            }
+            el.rotation = ((angle % 360) + 360) % 360;
+            renderer.render(elements);
+            restoreSelection();
+            showRotationHandle();
+            updateSelectionPanel();
+        }
+        return;
     }
 
     if (dragging) {
@@ -524,12 +564,26 @@ svgEl.addEventListener('mousemove', (e) => {
             el.y = Math.max(0, Math.min(el.y, ROOM.height - el.height));
             renderer.render(elements);
             restoreSelection();
+            showRotationHandle();
             updateSelectionPanel();
         }
     }
 });
 
 svgEl.addEventListener('mousedown', (e) => {
+    if (editMode && e.target.closest('.rotation-handle')) {
+        const el = elements.find(e => e.id === selectedId);
+        if (el) {
+            rotating = {
+                id: el.id,
+                centerX: mapper.toPixelX(el.x + el.width / 2),
+                centerY: mapper.toPixelY(el.y + el.height / 2),
+            };
+            e.preventDefault();
+            return;
+        }
+    }
+
     const target = e.target.closest('.floor-element');
     if (target) {
         const id = target.dataset.id;
@@ -553,6 +607,14 @@ svgEl.addEventListener('mousedown', (e) => {
 });
 
 svgEl.addEventListener('mouseup', () => {
+    if (rotating) {
+        const el = elements.find(el => el.id === rotating.id);
+        if (el && el._dbId) {
+            updateElement(el._dbId, { rotation: el.rotation || 0 });
+        }
+        rotating = null;
+        return;
+    }
     if (dragging) {
         const el = elements.find(el => el.id === dragging.id);
         if (el && el._dbId) {
@@ -564,6 +626,13 @@ svgEl.addEventListener('mouseup', () => {
 
 svgEl.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+    if (rotating) {
+        const el = elements.find(el => el.id === rotating.id);
+        if (el && el._dbId) {
+            updateElement(el._dbId, { rotation: el.rotation || 0 });
+        }
+        rotating = null;
+    }
     if (dragging) {
         const el = elements.find(el => el.id === dragging.id);
         if (el && el._dbId) {
@@ -580,12 +649,14 @@ function selectElement(id) {
     document.querySelectorAll('.floor-element').forEach(g => g.classList.remove('selected'));
     const el = svgEl.querySelector(`.floor-element[data-id="${id}"]`);
     if (el) el.classList.add('selected');
+    showRotationHandle();
     updateSelectionPanel();
 }
 
 function deselectAll() {
     selectedId = null;
     document.querySelectorAll('.floor-element').forEach(g => g.classList.remove('selected'));
+    renderer.clearSelection();
     updateSelectionPanel();
 }
 
@@ -594,6 +665,13 @@ function restoreSelection() {
         const el = svgEl.querySelector(`.floor-element[data-id="${selectedId}"]`);
         if (el) el.classList.add('selected');
     }
+}
+
+function showRotationHandle() {
+    renderer.clearSelection();
+    if (!editMode || !selectedId) return;
+    const el = elements.find(e => e.id === selectedId);
+    if (el) renderer.drawRotationHandle(el);
 }
 
 function updateSelectionPanel() {
@@ -606,6 +684,7 @@ function updateSelectionPanel() {
             selType.textContent = ELEMENT_TYPES[el.type]?.label || el.type;
             selPos.textContent = `(${el.x}, ${el.y}) ${ROOM.unit}`;
             selSize.textContent = `${el.width} \u00d7 ${el.height} ${ROOM.unit}`;
+            selRotation.textContent = `${el.rotation || 0}\u00b0`;
             return;
         }
     }

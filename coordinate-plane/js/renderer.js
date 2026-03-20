@@ -160,6 +160,12 @@ export class FloorPlanRenderer {
             arc.setAttribute('stroke-dasharray', '4,3');
             group.appendChild(arc);
 
+            if (door.rotation) {
+                const rcx = px + pw / 2;
+                const rcy = py + ph / 2;
+                group.setAttribute('transform', `rotate(${door.rotation}, ${rcx}, ${rcy})`);
+            }
+
             g.appendChild(group);
         });
     }
@@ -190,6 +196,13 @@ export class FloorPlanRenderer {
         r.setAttribute('stroke-width', '1');
         r.setAttribute('stroke-dasharray', '6,3');
         group.appendChild(r);
+
+        if (el.rotation) {
+            const rcx = px + pw / 2;
+            const rcy = py + ph / 2;
+            group.setAttribute('transform', `rotate(${el.rotation}, ${rcx}, ${rcy})`);
+        }
+
         g.appendChild(group);
     }
 
@@ -242,6 +255,12 @@ export class FloorPlanRenderer {
             r.setAttribute('stroke', typeInfo.color);
             r.setAttribute('stroke-width', '1.5');
             group.appendChild(r);
+        }
+
+        if (el.rotation) {
+            const rcx = px + pw / 2;
+            const rcy = py + ph / 2;
+            group.setAttribute('transform', `rotate(${el.rotation}, ${rcx}, ${rcy})`);
         }
 
         g.appendChild(group);
@@ -382,6 +401,88 @@ export class FloorPlanRenderer {
         t.setAttribute('class', 'element-label');
         t.textContent = labelText;
         g.appendChild(t);
+    }
+
+    /* ---- Rotation Handle ---- */
+
+    clearSelection() {
+        this.layers.selection.innerHTML = '';
+    }
+
+    drawRotationHandle(el) {
+        const g = this.layers.selection;
+        g.innerHTML = '';
+
+        const m = this.mapper;
+        const cx = m.toPixelX(el.x + el.width / 2);
+        const cy = m.toPixelY(el.y + el.height / 2);
+        const ph = m.toPixelH(el.height);
+        const pw = m.toPixelW(el.width);
+
+        const rotation = el.rotation || 0;
+        const rad = rotation * Math.PI / 180;
+        const handleDist = Math.max(ph, pw) / 2 + 22;
+
+        const hx = cx + handleDist * Math.sin(rad);
+        const hy = cy - handleDist * Math.cos(rad);
+
+        const line = document.createElementNS(this.ns, 'line');
+        line.setAttribute('x1', cx);
+        line.setAttribute('y1', cy);
+        line.setAttribute('x2', hx);
+        line.setAttribute('y2', hy);
+        line.setAttribute('stroke', '#3b82f6');
+        line.setAttribute('stroke-width', '1.2');
+        line.setAttribute('stroke-dasharray', '3,3');
+        line.setAttribute('class', 'rotation-guide');
+        g.appendChild(line);
+
+        const circle = document.createElementNS(this.ns, 'circle');
+        circle.setAttribute('cx', hx);
+        circle.setAttribute('cy', hy);
+        circle.setAttribute('r', 9);
+        circle.setAttribute('fill', '#3b82f6');
+        circle.setAttribute('stroke', '#fff');
+        circle.setAttribute('stroke-width', '2');
+        circle.setAttribute('class', 'rotation-handle');
+        g.appendChild(circle);
+
+        const iconR = 3.5;
+        const arc = document.createElementNS(this.ns, 'path');
+        arc.setAttribute('d',
+            `M ${hx + iconR * 0.7} ${hy - iconR * 0.7}` +
+            ` A ${iconR} ${iconR} 0 1 0 ${hx + iconR} ${hy + 0.5}`
+        );
+        arc.setAttribute('fill', 'none');
+        arc.setAttribute('stroke', '#fff');
+        arc.setAttribute('stroke-width', '1.5');
+        arc.setAttribute('stroke-linecap', 'round');
+        arc.setAttribute('class', 'rotation-guide');
+        g.appendChild(arc);
+
+        const tip = document.createElementNS(this.ns, 'path');
+        tip.setAttribute('d',
+            `M ${hx + iconR + 2} ${hy - 1.5} L ${hx + iconR} ${hy + 0.5} L ${hx + iconR - 2} ${hy - 1}`
+        );
+        tip.setAttribute('fill', 'none');
+        tip.setAttribute('stroke', '#fff');
+        tip.setAttribute('stroke-width', '1.5');
+        tip.setAttribute('stroke-linecap', 'round');
+        tip.setAttribute('stroke-linejoin', 'round');
+        tip.setAttribute('class', 'rotation-guide');
+        g.appendChild(tip);
+
+        if (rotation !== 0) {
+            const t = document.createElementNS(this.ns, 'text');
+            const labelDist = 12;
+            const lx = hx + labelDist * Math.sin(rad);
+            const ly = hy - labelDist * Math.cos(rad);
+            t.setAttribute('x', lx);
+            t.setAttribute('y', ly);
+            t.setAttribute('class', 'rotation-label');
+            t.textContent = `${Math.round(rotation)}\u00b0`;
+            g.appendChild(t);
+        }
     }
 
     /* ---- SVG Primitives ---- */

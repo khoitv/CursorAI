@@ -368,6 +368,36 @@ html, body {
     cursor: move;
 }
 
+/* Rotation Handle */
+
+.rotation-handle {
+    cursor: grab;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.25));
+    transition: r .12s ease;
+}
+
+.rotation-handle:hover {
+    r: 11;
+}
+
+.rotation-handle:active {
+    cursor: grabbing;
+}
+
+.rotation-guide {
+    pointer-events: none;
+}
+
+.rotation-label {
+    font-size: 10px;
+    fill: var(--accent);
+    font-weight: 700;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
 .grid-line {
     stroke: #e8eaed;
     stroke-width: 0.5;
@@ -632,6 +662,56 @@ input[type="color"]::-webkit-color-swatch {
 
 .select-with-preview select {
     padding-left: 30px;
+}
+
+/* Rotation Input */
+
+.rotation-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rotation-input-row input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+}
+
+.rotation-input-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    cursor: pointer;
+}
+
+.rotation-number-wrap {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.rotation-number-wrap input[type="number"] {
+    width: 56px;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 13px;
+}
+
+.rotation-unit {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 /* ---- Responsive ---- */
