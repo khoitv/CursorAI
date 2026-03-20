@@ -99,14 +99,14 @@ export class FloorPlanRenderer {
         const rightX = m.toPixelX(ROOM.width);
         this.line(g, leftX, topY, rightX, topY, 'dim-line');
         this.dimArrows(g, leftX, topY, rightX, topY);
-        this.text(g, (leftX + rightX) / 2, topY - 4, `42'`, 'dim-label');
+        this.text(g, (leftX + rightX) / 2, topY - 4, `${ROOM.width} ${ROOM.unit}`, 'dim-label');
 
         const sideX = m.toPixelX(ROOM.width) + 14;
         const topPy = m.toPixelY(ROOM.height);
         const botPy = m.toPixelY(0);
         this.line(g, sideX, topPy, sideX, botPy, 'dim-line');
         this.dimArrows(g, sideX, topPy, sideX, botPy);
-        this.text(g, sideX + 4, (topPy + botPy) / 2, `32'`, 'dim-label', 'start', -90);
+        this.text(g, sideX + 4, (topPy + botPy) / 2, `${ROOM.height} ${ROOM.unit}`, 'dim-label', 'start', -90);
     }
 
     drawWalls() {
@@ -133,7 +133,6 @@ export class FloorPlanRenderer {
             const pw = m.toPixelW(door.width);
             const ph = m.toPixelH(door.height);
 
-            // Door opening (gap in wall)
             const doorRect = document.createElementNS(this.ns, 'rect');
             doorRect.setAttribute('x', px);
             doorRect.setAttribute('y', py);
@@ -144,7 +143,6 @@ export class FloorPlanRenderer {
             doorRect.setAttribute('stroke-width', '1.5');
             group.appendChild(doorRect);
 
-            // Swing arc
             const arc = document.createElementNS(this.ns, 'path');
             const radius = pw;
             if (door.swing === 'inward') {
@@ -272,7 +270,6 @@ export class FloorPlanRenderer {
             group.appendChild(r);
         });
 
-        // Chairs (small circles around cluster)
         const chairR = Math.min(dw, dh) * 0.18;
         const chairs = [
             [px - chairR * 1.4, py + dh * 0.5],

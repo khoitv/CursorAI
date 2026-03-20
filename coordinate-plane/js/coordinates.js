@@ -1,6 +1,7 @@
 /**
- * Coordinate system and element definitions for the 42×32 ft classroom floor plan.
+ * Coordinate system and element definitions for the floor plan.
  * Origin (0,0) is at the bottom-left corner. X runs left-to-right, Y runs bottom-to-top.
+ * ROOM and ELEMENT_TYPES are mutable — updated at runtime from DB subscriptions.
  */
 
 export const ROOM = {
@@ -25,8 +26,13 @@ export const ELEMENT_TYPES = {
     furniture: { color: '#78716c', label: 'Furniture' }
 };
 
+export const DEFAULT_LEGENDS = Object.entries(ELEMENT_TYPES).map(([key, val]) => ({
+    key,
+    label: val.label,
+    color: val.color,
+}));
+
 export const DEFAULT_ELEMENTS = [
-    // Whiteboard — centered along top wall
     {
         id: 'whiteboard',
         type: 'whiteboard',
@@ -34,8 +40,6 @@ export const DEFAULT_ELEMENTS = [
         x: 12, y: 30.5,
         width: 16, height: 1.2
     },
-
-    // Teacher desk — top-right corner
     {
         id: 'teacher-desk',
         type: 'desk',
@@ -43,8 +47,6 @@ export const DEFAULT_ELEMENTS = [
         x: 33, y: 27,
         width: 6, height: 4
     },
-
-    // Student tables — 4 individual tables
     {
         id: 'table-1',
         type: 'table',
@@ -73,8 +75,6 @@ export const DEFAULT_ELEMENTS = [
         x: 21, y: 13,
         width: 3, height: 2.5
     },
-
-    // Computer stations — desk + chair as separate elements (3 pairs along left wall)
     {
         id: 'computer-1-desk',
         type: 'computerDesk',
@@ -117,8 +117,6 @@ export const DEFAULT_ELEMENTS = [
         x: 3.45, y: 14.1,
         width: 0.85, height: 2.3
     },
-
-    // Student storage — cubbies along bottom wall
     {
         id: 'storage',
         type: 'storage',
@@ -126,8 +124,6 @@ export const DEFAULT_ELEMENTS = [
         x: 2, y: 0.5,
         width: 22, height: 2.5
     },
-
-    // Class library — shelves on right wall
     {
         id: 'library-1',
         type: 'library',
@@ -142,8 +138,6 @@ export const DEFAULT_ELEMENTS = [
         x: 39.5, y: 14.5,
         width: 2, height: 2
     },
-
-    // Reading area zone
     {
         id: 'reading-zone',
         type: 'zone',
@@ -151,8 +145,6 @@ export const DEFAULT_ELEMENTS = [
         x: 28, y: 3,
         width: 13, height: 10
     },
-
-    // Sofa (L-shaped) inside reading area
     {
         id: 'sofa',
         type: 'furniture',
@@ -167,8 +159,6 @@ export const DEFAULT_ELEMENTS = [
         x: 36, y: 5,
         width: 2, height: 5
     },
-
-    // Rug
     {
         id: 'rug',
         type: 'zone',
@@ -176,8 +166,6 @@ export const DEFAULT_ELEMENTS = [
         x: 31, y: 4,
         width: 6, height: 5
     },
-
-    // Beanbag chairs
     {
         id: 'beanbag-1',
         type: 'furniture',
@@ -192,8 +180,6 @@ export const DEFAULT_ELEMENTS = [
         x: 35, y: 4.5,
         width: 1.8, height: 1.8
     },
-
-    // Doors
     {
         id: 'door-top',
         type: 'door',

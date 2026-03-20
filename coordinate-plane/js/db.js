@@ -1,6 +1,6 @@
 /**
  * InstantDB integration for floor plan persistence.
- * Replaces localStorage with real-time cloud-synced data.
+ * Handles CRUD for elements, legends, and room configuration.
  */
 
 import { init, id as instantId } from '@instantdb/core';
@@ -8,6 +8,8 @@ import { init, id as instantId } from '@instantdb/core';
 const APP_ID = '893fc487-41f4-4370-a6e5-b25bff85fe99';
 
 const db = init({ appId: APP_ID });
+
+/* ---- Elements ---- */
 
 export function subscribeElements(callback) {
     return db.subscribeQuery({ elements: {} }, (resp) => {
@@ -36,8 +38,30 @@ export function subscribeElements(callback) {
     });
 }
 
+export function createElement(el) {
+    const record = {
+        elementId: el.id,
+        type: el.type,
+        label: el.label,
+        x: el.x,
+        y: el.y,
+        width: el.width,
+        height: el.height,
+    };
+    if (el.swing) record.swing = el.swing;
+    db.transact(db.tx.elements[instantId()].update(record));
+}
+
+export function updateElement(dbId, updates) {
+    db.transact(db.tx.elements[dbId].update(updates));
+}
+
 export function updateElementPosition(dbId, x, y) {
     db.transact(db.tx.elements[dbId].update({ x, y }));
+}
+
+export function deleteElement(dbId) {
+    db.transact(db.tx.elements[dbId].delete());
 }
 
 export function resetElements(currentElements, defaults) {
@@ -77,4 +101,73 @@ export function seedDefaults(defaults) {
         return db.tx.elements[instantId()].update(record);
     });
     db.transact(txs);
+}
+
+/* ---- Legends ---- */
+
+export function subscribeLegends(callback) {
+    return db.subscribeQuery({ legends: {} }, (resp) => {
+        if (resp.error) {
+            console.error('InstantDB legends error:', resp.error.message);
+            callback({ error: resp.error });
+            return;
+        }
+        if (resp.data) {
+            callback({ data: resp.data.legends });
+        }
+    });
+}
+
+export function createLegend(legend) {
+    db.transact(db.tx.legends[instantId()].update({
+        key: legend.key,
+        label: legend.label,
+        color: legend.color,
+    }));
+}
+
+export function updateLegend(dbId, updates) {
+    db.transact(db.tx.legends[dbId].update(updates));
+}
+
+export function deleteLegend(dbId) {
+    db.transact(db.tx.legends[dbId].delete());
+}
+
+export function seedLegends(legends) {
+    const txs = legends.map(l =>
+        db.tx.legends[instantId()].update({
+            key: l.key,
+            label: l.label,
+            color: l.color,
+        })
+    );
+    db.transact(txs);
+}
+
+/* ---- Room Configuration ---- */
+
+export function subscribeRoomConfig(callback) {
+    return db.subscribeQuery({ roomConfig: {} }, (resp) => {
+        if (resp.error) {
+            console.error('InstantDB roomConfig error:', resp.error.message);
+            callback({ error: resp.error });
+            return;
+        }
+        if (resp.data) {
+            callback({ data: resp.data.roomConfig });
+        }
+    });
+}
+
+export function createRoomConfig(config) {
+    db.transact(db.tx.roomConfig[instantId()].update({
+        width: config.width,
+        height: config.height,
+        unit: config.unit,
+    }));
+}
+
+export function updateRoomConfig(dbId, updates) {
+    db.transact(db.tx.roomConfig[dbId].update(updates));
 }

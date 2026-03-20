@@ -1,22 +1,34 @@
 /**
  * Main application: wires up rendering, interactivity, and InstantDB persistence.
+ * Handles CRUD for elements, legends, and room configuration.
  */
 
-import { ROOM, ELEMENT_TYPES, DEFAULT_ELEMENTS, CoordinateMapper } from './coordinates.js';
+import { ROOM, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper } from './coordinates.js';
 import { FloorPlanRenderer } from './renderer.js';
-import { subscribeElements, updateElementPosition, resetElements, seedDefaults } from './db.js';
+import {
+    subscribeElements, updateElementPosition, resetElements, seedDefaults,
+    createElement, updateElement, deleteElement,
+    subscribeLegends, createLegend, updateLegend, deleteLegend, seedLegends,
+    subscribeRoomConfig, createRoomConfig, updateRoomConfig
+} from './db.js';
 
 const SVG_WIDTH = 740;
 const SVG_HEIGHT = 600;
 
 /* ---- State ---- */
 let elements = [];
+let legends = [];
+let roomConfigDbId = null;
 let selectedId = null;
 let editMode = false;
 let dragging = null;
-let seeded = false;
+let seededElements = false;
+let seededLegends = false;
+let seededRoom = false;
+let editingLegendId = null;
+let editingElementDbId = null;
 
-/* ---- DOM refs ---- */
+/* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
 const container = document.getElementById('canvas-container');
 const tooltip = document.getElementById('tooltip');
@@ -29,6 +41,10 @@ const selPos = document.getElementById('sel-pos');
 const selSize = document.getElementById('sel-size');
 const mouseCoords = document.getElementById('mouse-coords');
 
+const roomWDisplay = document.getElementById('room-w-display');
+const roomHDisplay = document.getElementById('room-h-display');
+const roomAreaDisplay = document.getElementById('room-area-display');
+
 const btnGrid = document.getElementById('btn-toggle-grid');
 const btnLabels = document.getElementById('btn-toggle-labels');
 const btnDims = document.getElementById('btn-toggle-dims');
@@ -36,20 +52,73 @@ const btnEdit = document.getElementById('btn-toggle-edit');
 const btnReset = document.getElementById('btn-reset');
 const btnExport = document.getElementById('btn-export');
 
-/* ---- Mapper & Renderer ---- */
-const mapper = new CoordinateMapper(ROOM.width, ROOM.height, SVG_WIDTH, SVG_HEIGHT, {
-    top: 30, right: 30, bottom: 30, left: 35
-});
+const modalOverlay = document.getElementById('modal-overlay');
 
-const renderer = new FloorPlanRenderer(svgEl, mapper, {
-    showGrid: true,
-    showLabels: true,
-    showDimensions: true
-});
+/* ---- Mapper & Renderer ---- */
+let mapper = createMapper();
+let renderer = createRenderer(mapper);
+
+function createMapper() {
+    return new CoordinateMapper(ROOM.width, ROOM.height, SVG_WIDTH, SVG_HEIGHT, {
+        top: 30, right: 30, bottom: 30, left: 35
+    });
+}
+
+function createRenderer(m) {
+    return new FloorPlanRenderer(svgEl, m, {
+        showGrid: true,
+        showLabels: true,
+        showDimensions: true
+    });
+}
+
+function rebuildRenderer() {
+    const opts = { ...renderer.options };
+    mapper = createMapper();
+    svgEl.innerHTML = '';
+    renderer = createRenderer(mapper);
+    Object.assign(renderer.options, opts);
+    renderer.init();
+    renderer.render(elements);
+    restoreSelection();
+}
 
 /* ---- Init ---- */
 renderer.init();
-buildLegend();
+
+subscribeRoomConfig((resp) => {
+    if (resp.error) return;
+    if (resp.data.length === 0 && !seededRoom) {
+        seededRoom = true;
+        createRoomConfig({ width: ROOM.width, height: ROOM.height, unit: ROOM.unit });
+        return;
+    }
+    if (resp.data.length > 0) {
+        const cfg = resp.data[0];
+        roomConfigDbId = cfg.id;
+        const changed = ROOM.width !== cfg.width || ROOM.height !== cfg.height || ROOM.unit !== cfg.unit;
+        ROOM.width = cfg.width;
+        ROOM.height = cfg.height;
+        ROOM.unit = cfg.unit;
+        updateRoomDisplay();
+        if (changed) rebuildRenderer();
+    }
+});
+
+subscribeLegends((resp) => {
+    if (resp.error) return;
+    if (resp.data.length === 0 && !seededLegends) {
+        seededLegends = true;
+        seedLegends(DEFAULT_LEGENDS);
+        return;
+    }
+    legends = resp.data;
+    syncElementTypes();
+    buildLegend();
+    populateTypeSelect();
+    renderer.render(elements);
+    restoreSelection();
+});
 
 subscribeElements((resp) => {
     if (resp.error) {
@@ -58,18 +127,33 @@ subscribeElements((resp) => {
         renderer.render(elements);
         return;
     }
-
-    if (resp.data.length === 0 && !seeded) {
-        seeded = true;
+    if (resp.data.length === 0 && !seededElements) {
+        seededElements = true;
         seedDefaults(DEFAULT_ELEMENTS);
         return;
     }
-
     elements = resp.data;
     renderer.render(elements);
     restoreSelection();
     updateSelectionPanel();
 });
+
+/* ---- Sync ELEMENT_TYPES from DB legends ---- */
+function syncElementTypes() {
+    Object.keys(ELEMENT_TYPES).forEach(k => delete ELEMENT_TYPES[k]);
+    legends.forEach(l => {
+        ELEMENT_TYPES[l.key] = { color: l.color, label: l.label };
+    });
+}
+
+/* ---- Room Display ---- */
+function updateRoomDisplay() {
+    roomWDisplay.textContent = `${ROOM.width} ${ROOM.unit}`;
+    roomHDisplay.textContent = `${ROOM.height} ${ROOM.unit}`;
+    const area = ROOM.width * ROOM.height;
+    roomAreaDisplay.textContent = `${area.toLocaleString()} sq ${ROOM.unit}`;
+}
+updateRoomDisplay();
 
 /* ---- Toolbar Buttons ---- */
 btnGrid.addEventListener('click', () => {
@@ -119,7 +203,293 @@ btnExport.addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
-/* ---- SVG Events ---- */
+/* ======== Modal System ======== */
+
+function openModal(modalId) {
+    modalOverlay.classList.add('active');
+    const modal = document.getElementById(modalId);
+    modal.classList.add('active');
+    const firstInput = modal.querySelector('input, select');
+    if (firstInput) setTimeout(() => firstInput.focus(), 100);
+}
+
+function closeAllModals() {
+    modalOverlay.classList.remove('active');
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    editingLegendId = null;
+    editingElementDbId = null;
+}
+
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeAllModals();
+});
+
+document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', closeAllModals);
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllModals();
+});
+
+/* ======== Room Settings Modal ======== */
+
+document.getElementById('btn-edit-room').addEventListener('click', () => {
+    document.getElementById('input-room-width').value = ROOM.width;
+    document.getElementById('input-room-height').value = ROOM.height;
+    document.getElementById('input-room-unit').value = ROOM.unit;
+    openModal('modal-room');
+});
+
+document.getElementById('btn-save-room').addEventListener('click', () => {
+    const w = parseFloat(document.getElementById('input-room-width').value);
+    const h = parseFloat(document.getElementById('input-room-height').value);
+    const u = document.getElementById('input-room-unit').value;
+    if (!w || !h || w <= 0 || h <= 0) return;
+    if (roomConfigDbId) {
+        updateRoomConfig(roomConfigDbId, { width: w, height: h, unit: u });
+    }
+    closeAllModals();
+});
+
+/* ======== Legend Modal ======== */
+
+const legendColorInput = document.getElementById('input-legend-color');
+const legendColorHex = document.getElementById('legend-color-hex');
+
+legendColorInput.addEventListener('input', () => {
+    legendColorHex.textContent = legendColorInput.value;
+    syncPresetHighlight();
+});
+
+document.querySelectorAll('.color-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+        legendColorInput.value = btn.dataset.color;
+        legendColorHex.textContent = btn.dataset.color;
+        syncPresetHighlight();
+    });
+});
+
+function syncPresetHighlight() {
+    const val = legendColorInput.value.toLowerCase();
+    document.querySelectorAll('.color-preset').forEach(p => {
+        p.classList.toggle('active', p.dataset.color.toLowerCase() === val);
+    });
+}
+
+document.getElementById('btn-add-legend').addEventListener('click', () => {
+    editingLegendId = null;
+    document.getElementById('legend-modal-title').textContent = 'Add Legend';
+    document.getElementById('input-legend-label').value = '';
+    document.getElementById('input-legend-key').value = '';
+    legendColorInput.value = '#3b82f6';
+    legendColorHex.textContent = '#3b82f6';
+    syncPresetHighlight();
+    openModal('modal-legend');
+});
+
+document.getElementById('btn-save-legend').addEventListener('click', () => {
+    const label = document.getElementById('input-legend-label').value.trim();
+    let key = document.getElementById('input-legend-key').value.trim();
+    const color = legendColorInput.value;
+
+    if (!label) return;
+    if (!key) {
+        key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    if (editingLegendId) {
+        updateLegend(editingLegendId, { label, key, color });
+    } else {
+        const existing = legends.find(l => l.key === key);
+        if (existing) {
+            if (!confirm(`A legend with key "${key}" already exists. Use a different key.`)) return;
+            return;
+        }
+        createLegend({ key, label, color });
+    }
+    closeAllModals();
+});
+
+function openEditLegend(legend) {
+    editingLegendId = legend.id;
+    document.getElementById('legend-modal-title').textContent = 'Edit Legend';
+    document.getElementById('input-legend-label').value = legend.label;
+    document.getElementById('input-legend-key').value = legend.key;
+    legendColorInput.value = legend.color;
+    legendColorHex.textContent = legend.color;
+    syncPresetHighlight();
+    openModal('modal-legend');
+}
+
+function handleDeleteLegend(legend) {
+    const usedBy = elements.filter(el => el.type === legend.key);
+    let msg = `Delete legend "${legend.label}"?`;
+    if (usedBy.length > 0) {
+        msg += `\n\n${usedBy.length} element(s) currently use this type.`;
+    }
+    if (confirm(msg)) {
+        deleteLegend(legend.id);
+    }
+}
+
+/* ======== Element Modal ======== */
+
+const elTypeSelect = document.getElementById('input-el-type');
+const elTypeDot = document.getElementById('el-type-dot');
+
+function populateTypeSelect() {
+    const prevValue = elTypeSelect.value;
+    elTypeSelect.innerHTML = '';
+    legends.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.key;
+        opt.textContent = l.label;
+        opt.dataset.color = l.color;
+        elTypeSelect.appendChild(opt);
+    });
+    if (prevValue && [...elTypeSelect.options].some(o => o.value === prevValue)) {
+        elTypeSelect.value = prevValue;
+    }
+    updateTypeDot();
+}
+
+function updateTypeDot() {
+    const selected = elTypeSelect.selectedOptions[0];
+    elTypeDot.style.background = (selected && selected.dataset.color) ? selected.dataset.color : '#ccc';
+}
+
+elTypeSelect.addEventListener('change', updateTypeDot);
+
+document.getElementById('btn-add-element').addEventListener('click', () => {
+    editingElementDbId = null;
+    document.getElementById('element-modal-title').textContent = 'Add Element';
+    document.getElementById('input-el-label').value = '';
+    document.getElementById('input-el-x').value = '0';
+    document.getElementById('input-el-y').value = '0';
+    document.getElementById('input-el-width').value = '3';
+    document.getElementById('input-el-height').value = '2';
+    populateTypeSelect();
+    openModal('modal-element');
+});
+
+document.getElementById('btn-edit-element').addEventListener('click', () => {
+    if (!selectedId) return;
+    const el = elements.find(e => e.id === selectedId);
+    if (!el) return;
+    editingElementDbId = el._dbId;
+    document.getElementById('element-modal-title').textContent = 'Edit Element';
+    document.getElementById('input-el-label').value = el.label;
+    document.getElementById('input-el-x').value = el.x;
+    document.getElementById('input-el-y').value = el.y;
+    document.getElementById('input-el-width').value = el.width;
+    document.getElementById('input-el-height').value = el.height;
+    populateTypeSelect();
+    elTypeSelect.value = el.type;
+    updateTypeDot();
+    openModal('modal-element');
+});
+
+document.getElementById('btn-save-element').addEventListener('click', () => {
+    const label = document.getElementById('input-el-label').value.trim();
+    const type = elTypeSelect.value;
+    const x = parseFloat(document.getElementById('input-el-x').value);
+    const y = parseFloat(document.getElementById('input-el-y').value);
+    const w = parseFloat(document.getElementById('input-el-width').value);
+    const h = parseFloat(document.getElementById('input-el-height').value);
+
+    if (!label || !type) return;
+    if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) return;
+    if (w <= 0 || h <= 0) return;
+
+    const clampedX = Math.max(0, Math.min(x, ROOM.width - w));
+    const clampedY = Math.max(0, Math.min(y, ROOM.height - h));
+
+    if (editingElementDbId) {
+        updateElement(editingElementDbId, {
+            label,
+            type,
+            x: clampedX,
+            y: clampedY,
+            width: w,
+            height: h,
+        });
+    } else {
+        createElement({
+            id: `el-${Date.now()}`,
+            type,
+            label,
+            x: clampedX,
+            y: clampedY,
+            width: w,
+            height: h,
+        });
+    }
+    closeAllModals();
+});
+
+/* ======== Delete Element ======== */
+
+document.getElementById('btn-delete-element').addEventListener('click', () => {
+    if (!selectedId) return;
+    const el = elements.find(e => e.id === selectedId);
+    if (!el) return;
+    if (confirm(`Delete "${el.label}"?`)) {
+        deleteElement(el._dbId);
+        selectedId = null;
+        updateSelectionPanel();
+    }
+});
+
+/* ======== Legend List (Sidebar) ======== */
+
+function buildLegend() {
+    const list = document.getElementById('legend-list');
+    list.innerHTML = '';
+    const seen = new Set();
+
+    legends.forEach(l => {
+        if (seen.has(l.key)) return;
+        seen.add(l.key);
+
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+
+        const swatch = document.createElement('span');
+        swatch.className = 'legend-swatch';
+        swatch.style.background = l.color + '40';
+        swatch.style.border = `2px solid ${l.color}`;
+
+        const label = document.createElement('span');
+        label.className = 'legend-label';
+        label.textContent = l.label;
+
+        const actions = document.createElement('div');
+        actions.className = 'legend-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'icon-btn icon-btn-sm';
+        editBtn.title = 'Edit';
+        editBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14"><path d="M10.5 1.5l2 2L4.5 11.5H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>';
+        editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditLegend(l); });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn icon-btn-sm icon-btn-danger';
+        delBtn.title = 'Delete';
+        delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 4h8M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M4 4v7a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>';
+        delBtn.addEventListener('click', (e) => { e.stopPropagation(); handleDeleteLegend(l); });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        item.appendChild(swatch);
+        item.appendChild(label);
+        item.appendChild(actions);
+        list.appendChild(item);
+    });
+}
+
+/* ======== SVG Events ======== */
 
 svgEl.addEventListener('mousemove', (e) => {
     const pt = svgPoint(e);
@@ -129,7 +499,7 @@ svgEl.addEventListener('mousemove', (e) => {
     if (lx >= 0 && lx <= ROOM.width && ly >= 0 && ly <= ROOM.height) {
         mouseCoords.textContent = `(${lx.toFixed(1)}, ${ly.toFixed(1)}) ${ROOM.unit}`;
     } else {
-        mouseCoords.textContent = '—';
+        mouseCoords.textContent = '\u2014';
     }
 
     const target = e.target.closest('.floor-element');
@@ -203,7 +573,7 @@ svgEl.addEventListener('mouseleave', () => {
     }
 });
 
-/* ---- Selection ---- */
+/* ======== Selection ======== */
 
 function selectElement(id) {
     selectedId = id;
@@ -235,7 +605,7 @@ function updateSelectionPanel() {
             selName.textContent = el.label;
             selType.textContent = ELEMENT_TYPES[el.type]?.label || el.type;
             selPos.textContent = `(${el.x}, ${el.y}) ${ROOM.unit}`;
-            selSize.textContent = `${el.width} × ${el.height} ${ROOM.unit}`;
+            selSize.textContent = `${el.width} \u00d7 ${el.height} ${ROOM.unit}`;
             return;
         }
     }
@@ -243,24 +613,7 @@ function updateSelectionPanel() {
     noSelPanel.style.display = '';
 }
 
-/* ---- Legend ---- */
-
-function buildLegend() {
-    const list = document.getElementById('legend-list');
-    const shown = new Set();
-    DEFAULT_ELEMENTS.forEach(el => {
-        if (shown.has(el.type)) return;
-        shown.add(el.type);
-        const info = ELEMENT_TYPES[el.type];
-        if (!info) return;
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        item.innerHTML = `<span class="legend-swatch" style="background:${info.color}40;border:2px solid ${info.color}"></span><span>${info.label}</span>`;
-        list.appendChild(item);
-    });
-}
-
-/* ---- Utility ---- */
+/* ======== Utility ======== */
 
 function svgPoint(mouseEvent) {
     const pt = svgEl.createSVGPoint();

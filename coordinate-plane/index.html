@@ -45,36 +45,201 @@
         </div>
 
         <aside class="sidebar" id="sidebar">
+            <!-- Room Settings -->
             <div class="sidebar-section">
-                <h2>Room Info</h2>
-                <div class="info-row"><span class="info-label">Width</span><span class="info-value">42 ft</span></div>
-                <div class="info-row"><span class="info-label">Height</span><span class="info-value">32 ft</span></div>
-                <div class="info-row"><span class="info-label">Area</span><span class="info-value">1,344 sq ft</span></div>
+                <div class="section-header">
+                    <h2>Room Settings</h2>
+                    <button class="icon-btn" id="btn-edit-room" title="Edit Room Settings">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M10.5 1.5l2 2L4.5 11.5H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                    </button>
+                </div>
+                <div class="info-row"><span class="info-label">Width</span><span class="info-value" id="room-w-display">42 ft</span></div>
+                <div class="info-row"><span class="info-label">Height</span><span class="info-value" id="room-h-display">32 ft</span></div>
+                <div class="info-row"><span class="info-label">Area</span><span class="info-value" id="room-area-display">1,344 sq ft</span></div>
             </div>
 
+            <!-- Selected Element -->
             <div class="sidebar-section" id="selection-panel" style="display:none;">
-                <h2>Selected Element</h2>
+                <div class="section-header">
+                    <h2>Selected Element</h2>
+                </div>
                 <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="sel-name">—</span></div>
                 <div class="info-row"><span class="info-label">Type</span><span class="info-value" id="sel-type">—</span></div>
                 <div class="info-row"><span class="info-label">Position</span><span class="info-value" id="sel-pos">—</span></div>
                 <div class="info-row"><span class="info-label">Size</span><span class="info-value" id="sel-size">—</span></div>
+                <div class="selection-actions">
+                    <button class="btn btn-ghost btn-sm" id="btn-edit-element" title="Edit this element">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M10.5 1.5l2 2L4.5 11.5H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        <span>Edit</span>
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="btn-delete-element" title="Delete this element">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 4h8M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M4 4v7a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        <span>Delete</span>
+                    </button>
+                </div>
             </div>
 
+            <!-- No Selection -->
             <div class="sidebar-section" id="no-selection-panel">
                 <p class="hint">Click an element on the floor plan to see its details.</p>
             </div>
 
+            <!-- Add Element -->
             <div class="sidebar-section">
-                <h2>Legend</h2>
+                <button class="btn btn-primary btn-block" id="btn-add-element">
+                    <svg width="15" height="15" viewBox="0 0 15 15"><path d="M7.5 2v11M2 7.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+                    <span>Add Element</span>
+                </button>
+            </div>
+
+            <!-- Legend -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h2>Legend</h2>
+                    <button class="icon-btn" id="btn-add-legend" title="Add Legend">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+                    </button>
+                </div>
                 <div id="legend-list" class="legend-list"></div>
             </div>
 
+            <!-- Coordinates -->
             <div class="sidebar-section">
                 <h2>Coordinates</h2>
                 <div class="info-row"><span class="info-label">Mouse</span><span class="info-value" id="mouse-coords">—</span></div>
             </div>
         </aside>
     </main>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay">
+
+        <!-- Room Settings Modal -->
+        <div id="modal-room" class="modal" data-modal="room">
+            <div class="modal-header">
+                <h3>Room Settings</h3>
+                <button class="modal-close" data-close>
+                    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-room-width">Width</label>
+                    <input type="number" id="input-room-width" min="1" step="1" placeholder="42">
+                </div>
+                <div class="form-group">
+                    <label for="input-room-height">Height</label>
+                    <input type="number" id="input-room-height" min="1" step="1" placeholder="32">
+                </div>
+                <div class="form-group">
+                    <label for="input-room-unit">Unit</label>
+                    <select id="input-room-unit">
+                        <option value="ft">Feet (ft)</option>
+                        <option value="m">Meters (m)</option>
+                        <option value="cm">Centimeters (cm)</option>
+                        <option value="in">Inches (in)</option>
+                        <option value="yd">Yards (yd)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="btn-save-room">Save Changes</button>
+            </div>
+        </div>
+
+        <!-- Legend Modal -->
+        <div id="modal-legend" class="modal" data-modal="legend">
+            <div class="modal-header">
+                <h3 id="legend-modal-title">Add Legend</h3>
+                <button class="modal-close" data-close>
+                    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-legend-label">Label</label>
+                    <input type="text" id="input-legend-label" placeholder="e.g. Conference Table">
+                </div>
+                <div class="form-group">
+                    <label for="input-legend-key">Key <span class="form-hint-inline">(auto-generated if empty)</span></label>
+                    <input type="text" id="input-legend-key" placeholder="e.g. confTable">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="input-legend-color" value="#3b82f6">
+                        <span class="color-hex" id="legend-color-hex">#3b82f6</span>
+                    </div>
+                    <div class="color-presets" id="color-presets">
+                        <button type="button" class="color-preset" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+                        <button type="button" class="color-preset" data-color="#f59e0b" style="background:#f59e0b" title="Amber"></button>
+                        <button type="button" class="color-preset" data-color="#10b981" style="background:#10b981" title="Emerald"></button>
+                        <button type="button" class="color-preset" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
+                        <button type="button" class="color-preset" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+                        <button type="button" class="color-preset" data-color="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
+                        <button type="button" class="color-preset" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+                        <button type="button" class="color-preset" data-color="#78716c" style="background:#78716c" title="Stone"></button>
+                        <button type="button" class="color-preset" data-color="#374151" style="background:#374151" title="Dark"></button>
+                        <button type="button" class="color-preset" data-color="#92400e" style="background:#92400e" title="Brown"></button>
+                        <button type="button" class="color-preset" data-color="#6366f1" style="background:#6366f1" title="Indigo"></button>
+                        <button type="button" class="color-preset" data-color="#14b8a6" style="background:#14b8a6" title="Teal"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="btn-save-legend">Save</button>
+            </div>
+        </div>
+
+        <!-- Add/Edit Element Modal -->
+        <div id="modal-element" class="modal" data-modal="element">
+            <div class="modal-header">
+                <h3 id="element-modal-title">Add Element</h3>
+                <button class="modal-close" data-close>
+                    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-el-label">Label</label>
+                    <input type="text" id="input-el-label" placeholder="e.g. Meeting Table">
+                </div>
+                <div class="form-group">
+                    <label for="input-el-type">Type (Legend)</label>
+                    <div class="select-with-preview">
+                        <span class="select-color-dot" id="el-type-dot"></span>
+                        <select id="input-el-type"></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="input-el-x">X Position</label>
+                        <input type="number" id="input-el-x" min="0" step="0.5" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="input-el-y">Y Position</label>
+                        <input type="number" id="input-el-y" min="0" step="0.5" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="input-el-width">Width</label>
+                        <input type="number" id="input-el-width" min="0.5" step="0.5" placeholder="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="input-el-height">Height</label>
+                        <input type="number" id="input-el-height" min="0.5" step="0.5" placeholder="2">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="btn-save-element">Save</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="js/app.js"></script>
 </body>
