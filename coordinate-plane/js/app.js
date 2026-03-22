@@ -1,16 +1,16 @@
 /**
  * Main application: wires up rendering, interactivity, and InstantDB persistence.
- * Handles CRUD for elements, legends, and room configuration.
+ * Handles CRUD for elements, legends, and floor plot configuration.
  * Supports multi-selection via Ctrl+click and marquee sweep.
  */
 
-import { ROOM, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper } from './coordinates.js';
+import { FLOOR, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper } from './coordinates.js';
 import { FloorPlanRenderer } from './renderer.js';
 import {
     subscribeElements, updateElementPosition, resetElements, seedDefaults,
     createElement, updateElement, deleteElement,
     subscribeLegends, createLegend, updateLegend, deleteLegend, seedLegends,
-    subscribeRoomConfig, createRoomConfig, updateRoomConfig,
+    subscribeFloorPlotConfig, createFloorPlotConfig, updateFloorPlotConfig,
     subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta
 } from './db.js';
 
@@ -21,7 +21,7 @@ const SVG_HEIGHT = 600;
 let elements = [];
 let legends = [];
 let groupMetas = [];
-let roomConfigDbId = null;
+let floorPlotConfigDbId = null;
 let selectedIds = new Set();
 let editMode = false;
 let dragging = null;
@@ -33,7 +33,7 @@ let spaceHeld = false;
 let viewBox = { x: 0, y: 0, w: SVG_WIDTH, h: SVG_HEIGHT };
 let seededElements = false;
 let seededLegends = false;
-let seededRoom = false;
+let seededFloorPlot = false;
 let editingLegendId = null;
 let editingElementDbId = null;
 let activeLegendKey = null;
@@ -54,9 +54,9 @@ const selRotation = document.getElementById('sel-rotation');
 const selCount = document.getElementById('sel-count');
 const mouseCoords = document.getElementById('mouse-coords');
 
-const roomWDisplay = document.getElementById('room-w-display');
-const roomHDisplay = document.getElementById('room-h-display');
-const roomAreaDisplay = document.getElementById('room-area-display');
+const floorWDisplay = document.getElementById('floor-w-display');
+const floorHDisplay = document.getElementById('floor-h-display');
+const floorAreaDisplay = document.getElementById('floor-area-display');
 
 const btnGrid = document.getElementById('btn-toggle-grid');
 const btnLabels = document.getElementById('btn-toggle-labels');
@@ -72,7 +72,7 @@ let mapper = createMapper();
 let renderer = createRenderer(mapper);
 
 function createMapper() {
-    return new CoordinateMapper(ROOM.width, ROOM.height, SVG_WIDTH, SVG_HEIGHT, {
+    return new CoordinateMapper(FLOOR.width, FLOOR.height, SVG_WIDTH, SVG_HEIGHT, {
         top: 30, right: 30, bottom: 30, left: 35
     });
 }
@@ -165,21 +165,21 @@ document.getElementById('btn-pan-mode').addEventListener('click', () => {
 /* ---- Init ---- */
 renderer.init();
 
-subscribeRoomConfig((resp) => {
+subscribeFloorPlotConfig((resp) => {
     if (resp.error) return;
-    if (resp.data.length === 0 && !seededRoom) {
-        seededRoom = true;
-        createRoomConfig({ width: ROOM.width, height: ROOM.height, unit: ROOM.unit });
+    if (resp.data.length === 0 && !seededFloorPlot) {
+        seededFloorPlot = true;
+        createFloorPlotConfig({ width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit });
         return;
     }
     if (resp.data.length > 0) {
         const cfg = resp.data[0];
-        roomConfigDbId = cfg.id;
-        const changed = ROOM.width !== cfg.width || ROOM.height !== cfg.height || ROOM.unit !== cfg.unit;
-        ROOM.width = cfg.width;
-        ROOM.height = cfg.height;
-        ROOM.unit = cfg.unit;
-        updateRoomDisplay();
+        floorPlotConfigDbId = cfg.id;
+        const changed = FLOOR.width !== cfg.width || FLOOR.height !== cfg.height || FLOOR.unit !== cfg.unit;
+        FLOOR.width = cfg.width;
+        FLOOR.height = cfg.height;
+        FLOOR.unit = cfg.unit;
+        updateFloorPlotDisplay();
         if (changed) rebuildRenderer();
     }
 });
@@ -233,14 +233,14 @@ function syncElementTypes() {
     });
 }
 
-/* ---- Room Display ---- */
-function updateRoomDisplay() {
-    roomWDisplay.textContent = `${ROOM.width} ${ROOM.unit}`;
-    roomHDisplay.textContent = `${ROOM.height} ${ROOM.unit}`;
-    const area = ROOM.width * ROOM.height;
-    roomAreaDisplay.textContent = `${area.toLocaleString()} sq ${ROOM.unit}`;
+/* ---- Floor plot display ---- */
+function updateFloorPlotDisplay() {
+    floorWDisplay.textContent = `${FLOOR.width} ${FLOOR.unit}`;
+    floorHDisplay.textContent = `${FLOOR.height} ${FLOOR.unit}`;
+    const area = FLOOR.width * FLOOR.height;
+    floorAreaDisplay.textContent = `${area.toLocaleString()} sq ${FLOOR.unit}`;
 }
-updateRoomDisplay();
+updateFloorPlotDisplay();
 
 /* ---- Toolbar Buttons ---- */
 btnGrid.addEventListener('click', () => {
@@ -334,22 +334,22 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-/* ======== Room Settings Modal ======== */
+/* ======== Floor plot settings modal ======== */
 
-document.getElementById('btn-edit-room').addEventListener('click', () => {
-    document.getElementById('input-room-width').value = ROOM.width;
-    document.getElementById('input-room-height').value = ROOM.height;
-    document.getElementById('input-room-unit').value = ROOM.unit;
-    openModal('modal-room');
+document.getElementById('btn-edit-floor-plot').addEventListener('click', () => {
+    document.getElementById('input-floor-plot-width').value = FLOOR.width;
+    document.getElementById('input-floor-plot-height').value = FLOOR.height;
+    document.getElementById('input-floor-plot-unit').value = FLOOR.unit;
+    openModal('modal-floor-plot');
 });
 
-document.getElementById('btn-save-room').addEventListener('click', () => {
-    const w = parseFloat(document.getElementById('input-room-width').value);
-    const h = parseFloat(document.getElementById('input-room-height').value);
-    const u = document.getElementById('input-room-unit').value;
+document.getElementById('btn-save-floor-plot').addEventListener('click', () => {
+    const w = parseFloat(document.getElementById('input-floor-plot-width').value);
+    const h = parseFloat(document.getElementById('input-floor-plot-height').value);
+    const u = document.getElementById('input-floor-plot-unit').value;
     if (!w || !h || w <= 0 || h <= 0) return;
-    if (roomConfigDbId) {
-        updateRoomConfig(roomConfigDbId, { width: w, height: h, unit: u });
+    if (floorPlotConfigDbId) {
+        updateFloorPlotConfig(floorPlotConfigDbId, { width: w, height: h, unit: u });
     }
     closeAllModals();
 });
@@ -519,8 +519,8 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
     if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) return;
     if (w <= 0 || h <= 0) return;
 
-    const clampedX = Math.max(0, Math.min(x, ROOM.width - w));
-    const clampedY = Math.max(0, Math.min(y, ROOM.height - h));
+    const clampedX = Math.max(0, Math.min(x, FLOOR.width - w));
+    const clampedY = Math.max(0, Math.min(y, FLOOR.height - h));
     const normRot = ((rot % 360) + 360) % 360;
 
     if (editingElementDbId) {
@@ -742,8 +742,8 @@ svgEl.addEventListener('mousemove', (e) => {
     const lx = mapper.toLogicalX(pt.x);
     const ly = mapper.toLogicalY(pt.y);
 
-    if (lx >= 0 && lx <= ROOM.width && ly >= 0 && ly <= ROOM.height) {
-        mouseCoords.textContent = `(${lx.toFixed(1)}, ${ly.toFixed(1)}) ${ROOM.unit}`;
+    if (lx >= 0 && lx <= FLOOR.width && ly >= 0 && ly <= FLOOR.height) {
+        mouseCoords.textContent = `(${lx.toFixed(1)}, ${ly.toFixed(1)}) ${FLOOR.unit}`;
     } else {
         mouseCoords.textContent = '\u2014';
     }
@@ -797,8 +797,8 @@ svgEl.addEventListener('mousemove', (e) => {
             if (el) {
                 el.x = Math.round((init.x + dx) * 2) / 2;
                 el.y = Math.round((init.y + dy) * 2) / 2;
-                el.x = Math.max(0, Math.min(el.x, ROOM.width - el.width));
-                el.y = Math.max(0, Math.min(el.y, ROOM.height - el.height));
+                el.x = Math.max(0, Math.min(el.x, FLOOR.width - el.width));
+                el.y = Math.max(0, Math.min(el.y, FLOOR.height - el.height));
             }
         }
         renderer.render(elements);
@@ -1061,8 +1061,8 @@ function updateSelectionPanel() {
             noSelPanel.style.display = 'none';
             selName.textContent = el.label;
             selType.textContent = ELEMENT_TYPES[el.type]?.label || el.type;
-            selPos.textContent = `(${el.x}, ${el.y}) ${ROOM.unit}`;
-            selSize.textContent = `${el.width} \u00d7 ${el.height} ${ROOM.unit}`;
+            selPos.textContent = `(${el.x}, ${el.y}) ${FLOOR.unit}`;
+            selSize.textContent = `${el.width} \u00d7 ${el.height} ${FLOOR.unit}`;
             selRotation.textContent = `${el.rotation || 0}\u00b0`;
             return;
         }

@@ -3,7 +3,7 @@
  * Draws grid, axes, walls, doors, and all furniture elements.
  */
 
-import { ROOM, ELEMENT_TYPES } from './coordinates.js';
+import { FLOOR, ELEMENT_TYPES } from './coordinates.js';
 
 export class FloorPlanRenderer {
     constructor(svgElement, mapper, options) {
@@ -65,15 +65,15 @@ export class FloorPlanRenderer {
         const g = this.layers.grid;
         const m = this.mapper;
 
-        for (let x = 0; x <= ROOM.width; x++) {
+        for (let x = 0; x <= FLOOR.width; x++) {
             const px = m.toPixelX(x);
             const cls = (x % 5 === 0) ? 'grid-line grid-line-major' : 'grid-line';
-            this.line(g, px, m.toPixelY(ROOM.height), px, m.toPixelY(0), cls);
+            this.line(g, px, m.toPixelY(FLOOR.height), px, m.toPixelY(0), cls);
         }
-        for (let y = 0; y <= ROOM.height; y++) {
+        for (let y = 0; y <= FLOOR.height; y++) {
             const py = m.toPixelY(y);
             const cls = (y % 5 === 0) ? 'grid-line grid-line-major' : 'grid-line';
-            this.line(g, m.toPixelX(0), py, m.toPixelX(ROOM.width), py, cls);
+            this.line(g, m.toPixelX(0), py, m.toPixelX(FLOOR.width), py, cls);
         }
     }
 
@@ -81,12 +81,12 @@ export class FloorPlanRenderer {
         const g = this.layers.axes;
         const m = this.mapper;
 
-        for (let x = 0; x <= ROOM.width; x += 2) {
+        for (let x = 0; x <= FLOOR.width; x += 2) {
             const px = m.toPixelX(x);
             const py = m.toPixelY(0) + 14;
             this.text(g, px, py, x.toString(), 'axis-label');
         }
-        for (let y = 0; y <= ROOM.height; y += 2) {
+        for (let y = 0; y <= FLOOR.height; y += 2) {
             const px = m.toPixelX(0) - 8;
             const py = m.toPixelY(y) + 3;
             this.text(g, px, py, y.toString(), 'axis-label', 'end');
@@ -97,26 +97,26 @@ export class FloorPlanRenderer {
         const g = this.layers.dimensions;
         const m = this.mapper;
 
-        const topY = m.toPixelY(ROOM.height) - 14;
+        const topY = m.toPixelY(FLOOR.height) - 14;
         const leftX = m.toPixelX(0);
-        const rightX = m.toPixelX(ROOM.width);
+        const rightX = m.toPixelX(FLOOR.width);
         this.line(g, leftX, topY, rightX, topY, 'dim-line');
         this.dimArrows(g, leftX, topY, rightX, topY);
-        this.text(g, (leftX + rightX) / 2, topY - 4, `${ROOM.width} ${ROOM.unit}`, 'dim-label');
+        this.text(g, (leftX + rightX) / 2, topY - 4, `${FLOOR.width} ${FLOOR.unit}`, 'dim-label');
 
-        const sideX = m.toPixelX(ROOM.width) + 14;
-        const topPy = m.toPixelY(ROOM.height);
+        const sideX = m.toPixelX(FLOOR.width) + 14;
+        const topPy = m.toPixelY(FLOOR.height);
         const botPy = m.toPixelY(0);
         this.line(g, sideX, topPy, sideX, botPy, 'dim-line');
         this.dimArrows(g, sideX, topPy, sideX, botPy);
-        this.text(g, sideX + 4, (topPy + botPy) / 2, `${ROOM.height} ${ROOM.unit}`, 'dim-label', 'start', -90);
+        this.text(g, sideX + 4, (topPy + botPy) / 2, `${FLOOR.height} ${FLOOR.unit}`, 'dim-label', 'start', -90);
     }
 
     drawWalls() {
         const m = this.mapper;
         const g = this.layers.elements;
         const x0 = m.toPixelX(0), y0 = m.toPixelY(0);
-        const x1 = m.toPixelX(ROOM.width), y1 = m.toPixelY(ROOM.height);
+        const x1 = m.toPixelX(FLOOR.width), y1 = m.toPixelY(FLOOR.height);
         this.rect(g, x0, y1, x1 - x0, y0 - y1, 'wall', { fill: 'none' });
     }
 

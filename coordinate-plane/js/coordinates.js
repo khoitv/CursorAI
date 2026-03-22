@@ -1,10 +1,10 @@
 /**
  * Coordinate system and element definitions for the floor plan.
  * Origin (0,0) is at the bottom-left corner. X runs left-to-right, Y runs bottom-to-top.
- * ROOM and ELEMENT_TYPES are mutable — updated at runtime from DB subscriptions.
+ * FLOOR (plot bounds) and ELEMENT_TYPES are mutable — updated at runtime from DB subscriptions.
  */
 
-export const ROOM = {
+export const FLOOR = {
     width: 42,
     height: 32,
     unit: 'ft'
@@ -202,16 +202,16 @@ export const DEFAULT_ELEMENTS = [
  * Coordinate mapper: converts logical floor plan coordinates to SVG pixel coords.
  */
 export class CoordinateMapper {
-    constructor(roomWidth, roomHeight, svgWidth, svgHeight, padding) {
-        this.roomW = roomWidth;
-        this.roomH = roomHeight;
+    constructor(floorWidth, floorHeight, svgWidth, svgHeight, padding) {
+        this.floorW = floorWidth;
+        this.floorH = floorHeight;
         this.padding = padding || { top: 30, right: 20, bottom: 30, left: 35 };
         this.svgW = svgWidth;
         this.svgH = svgHeight;
         this.drawW = svgWidth - this.padding.left - this.padding.right;
         this.drawH = svgHeight - this.padding.top - this.padding.bottom;
-        this.scaleX = this.drawW / roomWidth;
-        this.scaleY = this.drawH / roomHeight;
+        this.scaleX = this.drawW / floorWidth;
+        this.scaleY = this.drawH / floorHeight;
     }
 
     toPixelX(logicalX) {
@@ -219,7 +219,7 @@ export class CoordinateMapper {
     }
 
     toPixelY(logicalY) {
-        return this.padding.top + (this.roomH - logicalY) * this.scaleY;
+        return this.padding.top + (this.floorH - logicalY) * this.scaleY;
     }
 
     toPixelW(logicalW) {
@@ -235,6 +235,6 @@ export class CoordinateMapper {
     }
 
     toLogicalY(pixelY) {
-        return this.roomH - (pixelY - this.padding.top) / this.scaleY;
+        return this.floorH - (pixelY - this.padding.top) / this.scaleY;
     }
 }

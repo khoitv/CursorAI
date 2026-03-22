@@ -1,6 +1,6 @@
 /**
  * InstantDB integration for floor plan persistence.
- * Handles CRUD for elements, legends, and room configuration.
+ * Handles CRUD for elements, legends, and floor plot configuration.
  */
 
 import { init, id as instantId } from '@instantdb/core';
@@ -181,12 +181,12 @@ export function deleteGroupMeta(dbId) {
     db.transact(db.tx.groups[dbId].delete());
 }
 
-/* ---- Room Configuration ---- */
+/* ---- Floor plot bounds (InstantDB entity: roomConfig) ---- */
 
-export function subscribeRoomConfig(callback) {
+export function subscribeFloorPlotConfig(callback) {
     return db.subscribeQuery({ roomConfig: {} }, (resp) => {
         if (resp.error) {
-            console.error('InstantDB roomConfig error:', resp.error.message);
+            console.error('InstantDB floor plot config error:', resp.error.message);
             callback({ error: resp.error });
             return;
         }
@@ -196,7 +196,7 @@ export function subscribeRoomConfig(callback) {
     });
 }
 
-export function createRoomConfig(config) {
+export function createFloorPlotConfig(config) {
     db.transact(db.tx.roomConfig[instantId()].update({
         width: config.width,
         height: config.height,
@@ -204,6 +204,6 @@ export function createRoomConfig(config) {
     }));
 }
 
-export function updateRoomConfig(dbId, updates) {
+export function updateFloorPlotConfig(dbId, updates) {
     db.transact(db.tx.roomConfig[dbId].update(updates));
 }
