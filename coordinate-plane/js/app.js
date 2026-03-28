@@ -111,12 +111,7 @@ function updateViewBox() {
     const pct = Math.round(SVG_WIDTH / viewBox.w * 100);
     document.getElementById('zoom-level').textContent = `${pct}%`;
 
-    const btnPan = document.getElementById('btn-pan-mode');
-    const panSep = document.getElementById('pan-sep');
-    const notDefault = pct !== 100;
-    btnPan.style.display = notDefault ? '' : 'none';
-    panSep.style.display = notDefault ? '' : 'none';
-    if (!notDefault && panMode) setPanMode(false);
+    if (pct === 100 && panMode) setPanMode(false);
 }
 
 function zoomAtPoint(factor, svgX, svgY) {
