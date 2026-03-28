@@ -26,10 +26,109 @@ export const ELEMENT_TYPES = {
     furniture: { color: '#78716c', label: 'Furniture' }
 };
 
+/** Geometric shape shown for elements of this legend type. */
+export const LEGEND_SHAPE_KEYS = [
+    'circle', 'triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'octagon',
+    'ellipse', 'parallelogram', 'trapezoid',
+];
+
+export const LEGEND_SHAPE_LABELS = {
+    circle: 'Circle',
+    triangle: 'Triangle',
+    square: 'Square',
+    rectangle: 'Rectangle',
+    pentagon: 'Pentagon',
+    hexagon: 'Hexagon',
+    octagon: 'Octagon',
+    ellipse: 'Ellipse',
+    parallelogram: 'Parallelogram',
+    trapezoid: 'Trapezoid',
+};
+
+export const LEGEND_BORDER_KEYS = ['solid', 'dashed', 'dotted'];
+
+export const LEGEND_BORDER_LABELS = {
+    solid: 'Solid',
+    dashed: 'Dashed',
+    dotted: 'Dotted',
+};
+
+export function normalizeLegendShape(s) {
+    const v = String(s || '').toLowerCase().trim();
+    return LEGEND_SHAPE_KEYS.includes(v) ? v : 'rectangle';
+}
+
+export function normalizeLegendBorderStyle(s) {
+    const v = String(s || '').toLowerCase().trim();
+    return LEGEND_BORDER_KEYS.includes(v) ? v : 'solid';
+}
+
+export function normalizeLegendBorderColor(c, fallback) {
+    const expand = (hex) => {
+        if (hex.length === 4) {
+            return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`.toLowerCase();
+        }
+        return hex.toLowerCase();
+    };
+    const t = String(c || '').trim();
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(t)) {
+        return expand(t);
+    }
+    const f = String(fallback || '').trim();
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(f)) {
+        return expand(f);
+    }
+    return '#374151';
+}
+
+export function normalizeLegendBorderSize(n) {
+    const x = parseFloat(n);
+    if (Number.isFinite(x) && x >= 0.25 && x <= 12) return x;
+    return 1.5;
+}
+
+/**
+ * Final draw style for an element: optional per-element fields override legend (type) defaults.
+ */
+export function mergeElementDrawStyle(el, typeInfo) {
+    const ti = typeInfo || {};
+    const fillColor = ti.color || '#999999';
+    const legendShape = normalizeLegendShape(ti.shape);
+    const legendBorderStyle = normalizeLegendBorderStyle(ti.borderStyle);
+    const legendBorderColor = normalizeLegendBorderColor(ti.borderColor, fillColor);
+    const legendBorderSize = normalizeLegendBorderSize(ti.borderSize);
+
+    const shape = el.shape != null && String(el.shape).trim() !== ''
+        ? normalizeLegendShape(el.shape)
+        : legendShape;
+    const borderStyle = el.borderStyle != null && String(el.borderStyle).trim() !== ''
+        ? normalizeLegendBorderStyle(el.borderStyle)
+        : legendBorderStyle;
+    const borderColorSrc = el.borderColor != null && String(el.borderColor).trim() !== ''
+        ? el.borderColor
+        : legendBorderColor;
+    const strokeColor = normalizeLegendBorderColor(borderColorSrc, fillColor);
+    const strokeWidth = (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize)))
+        ? normalizeLegendBorderSize(el.borderSize)
+        : legendBorderSize;
+
+    return {
+        shape,
+        fillColor,
+        strokeColor,
+        strokeWidth,
+        borderStyle,
+    };
+}
+
 export const DEFAULT_LEGENDS = Object.entries(ELEMENT_TYPES).map(([key, val]) => ({
     key,
     label: val.label,
     color: val.color,
+    shape: 'rectangle',
+    borderStyle: 'solid',
+    borderColor: val.color,
+    borderSize: 1.5,
 }));
 
 export const DEFAULT_ELEMENTS = [

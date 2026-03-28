@@ -3,7 +3,8 @@
  * Draws grid, axes, walls, doors, and all furniture elements.
  */
 
-import { FLOOR, ELEMENT_TYPES } from './coordinates.js';
+import { FLOOR, ELEMENT_TYPES, mergeElementDrawStyle } from './coordinates.js';
+import { appendStyledShape } from './legendDrawHelpers.js';
 
 export class FloorPlanRenderer {
     constructor(svgElement, mapper, options) {
@@ -137,15 +138,9 @@ export class FloorPlanRenderer {
             const pw = m.toPixelW(door.width);
             const ph = m.toPixelH(door.height);
 
-            const doorRect = document.createElementNS(this.ns, 'rect');
-            doorRect.setAttribute('x', px);
-            doorRect.setAttribute('y', py);
-            doorRect.setAttribute('width', pw);
-            doorRect.setAttribute('height', ph);
-            doorRect.setAttribute('fill', ELEMENT_TYPES.door.color + '40');
-            doorRect.setAttribute('stroke', ELEMENT_TYPES.door.color);
-            doorRect.setAttribute('stroke-width', '1.5');
-            group.appendChild(doorRect);
+            const ti = ELEMENT_TYPES.door || { color: '#92400e' };
+            const style = mergeElementDrawStyle(door, ti);
+            appendStyledShape(group, this.ns, px, py, pw, ph, style);
 
             const arc = document.createElementNS(this.ns, 'path');
             const radius = pw;
@@ -159,7 +154,7 @@ export class FloorPlanRenderer {
                 arc.setAttribute('d', `M ${startX} ${startY} A ${radius} ${radius} 0 0 0 ${startX + radius} ${startY + radius}`);
             }
             arc.setAttribute('fill', 'none');
-            arc.setAttribute('stroke', ELEMENT_TYPES.door.color);
+            arc.setAttribute('stroke', style.strokeColor);
             arc.setAttribute('stroke-width', '1');
             arc.setAttribute('stroke-dasharray', '4,3');
             group.appendChild(arc);
@@ -189,18 +184,8 @@ export class FloorPlanRenderer {
         const pw = m.toPixelW(el.width);
         const ph = m.toPixelH(el.height);
 
-        const color = ELEMENT_TYPES[el.type]?.color || '#999';
-        const r = document.createElementNS(this.ns, 'rect');
-        r.setAttribute('x', px);
-        r.setAttribute('y', py);
-        r.setAttribute('width', pw);
-        r.setAttribute('height', ph);
-        r.setAttribute('rx', '4');
-        r.setAttribute('fill', color + '18');
-        r.setAttribute('stroke', color);
-        r.setAttribute('stroke-width', '1');
-        r.setAttribute('stroke-dasharray', '6,3');
-        group.appendChild(r);
+        const ti = ELEMENT_TYPES[el.type] || { color: '#999' };
+        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(el, ti));
 
         if (el.rotation) {
             const rcx = px + pw / 2;
@@ -226,42 +211,7 @@ export class FloorPlanRenderer {
         const pw = m.toPixelW(el.width);
         const ph = m.toPixelH(el.height);
         const typeInfo = ELEMENT_TYPES[el.type] || { color: '#999' };
-
-        if (el.type === 'table') {
-            const r = document.createElementNS(this.ns, 'rect');
-            r.setAttribute('x', px);
-            r.setAttribute('y', py);
-            r.setAttribute('width', pw);
-            r.setAttribute('height', ph);
-            r.setAttribute('rx', '3');
-            r.setAttribute('fill', typeInfo.color + '30');
-            r.setAttribute('stroke', typeInfo.color);
-            r.setAttribute('stroke-width', '1.5');
-            group.appendChild(r);
-        } else if (el.type === 'cluster') {
-            this.drawDeskCluster(group, px, py, pw, ph, typeInfo.color);
-        } else if (el.type === 'computer') {
-            this.drawComputerStation(group, px, py, pw, ph, typeInfo.color);
-        } else if (el.type === 'computerDesk') {
-            this.drawComputerDesk(group, px, py, pw, ph, typeInfo.color);
-        } else if (el.type === 'computerChair') {
-            this.drawComputerChair(group, px, py, pw, ph, typeInfo.color);
-        } else if (el.type === 'storage') {
-            this.drawStorageCubbies(group, px, py, pw, ph, typeInfo.color);
-        } else if (el.id === 'beanbag-1' || el.id === 'beanbag-2') {
-            this.drawCircle(group, px + pw / 2, py + ph / 2, Math.min(pw, ph) / 2, typeInfo.color);
-        } else {
-            const r = document.createElementNS(this.ns, 'rect');
-            r.setAttribute('x', px);
-            r.setAttribute('y', py);
-            r.setAttribute('width', pw);
-            r.setAttribute('height', ph);
-            r.setAttribute('rx', '3');
-            r.setAttribute('fill', typeInfo.color + '30');
-            r.setAttribute('stroke', typeInfo.color);
-            r.setAttribute('stroke-width', '1.5');
-            group.appendChild(r);
-        }
+        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(el, typeInfo));
 
         if (el.rotation) {
             const rcx = px + pw / 2;

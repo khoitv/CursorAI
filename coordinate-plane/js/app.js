@@ -4,7 +4,13 @@
  * Supports multi-selection via Ctrl+click and marquee sweep.
  */
 
-import { FLOOR, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper } from './coordinates.js';
+import {
+    FLOOR, ELEMENT_TYPES, DEFAULT_ELEMENTS, DEFAULT_LEGENDS, CoordinateMapper,
+    LEGEND_SHAPE_KEYS, LEGEND_SHAPE_LABELS, LEGEND_BORDER_KEYS, LEGEND_BORDER_LABELS,
+    normalizeLegendShape, normalizeLegendBorderStyle, normalizeLegendBorderColor, normalizeLegendBorderSize,
+    mergeElementDrawStyle,
+} from './coordinates.js';
+import { appendStyledShape, SVG_NS } from './legendDrawHelpers.js';
 import { FloorPlanRenderer } from './renderer.js';
 import {
     subscribeElements, updateElementPosition, resetElements, seedDefaults,
@@ -51,6 +57,7 @@ const selType = document.getElementById('sel-type');
 const selPos = document.getElementById('sel-pos');
 const selSize = document.getElementById('sel-size');
 const selRotation = document.getElementById('sel-rotation');
+const selAppearance = document.getElementById('sel-appearance');
 const selCount = document.getElementById('sel-count');
 const mouseCoords = document.getElementById('mouse-coords');
 
@@ -224,7 +231,14 @@ subscribeElements((resp) => {
 function syncElementTypes() {
     Object.keys(ELEMENT_TYPES).forEach(k => delete ELEMENT_TYPES[k]);
     legends.forEach(l => {
-        ELEMENT_TYPES[l.key] = { color: l.color, label: l.label };
+        ELEMENT_TYPES[l.key] = {
+            color: l.color,
+            label: l.label,
+            shape: normalizeLegendShape(l.shape),
+            borderStyle: normalizeLegendBorderStyle(l.borderStyle),
+            borderColor: normalizeLegendBorderColor(l.borderColor, l.color),
+            borderSize: normalizeLegendBorderSize(l.borderSize),
+        };
     });
 }
 
@@ -353,10 +367,44 @@ document.getElementById('btn-save-floor-plot').addEventListener('click', () => {
 
 const legendColorInput = document.getElementById('input-legend-color');
 const legendColorHex = document.getElementById('legend-color-hex');
+const legendBorderColorInput = document.getElementById('input-legend-border-color');
+const legendBorderColorHex = document.getElementById('legend-border-color-hex');
+
+function populateLegendShapeSelect(value) {
+    const sel = document.getElementById('input-legend-shape');
+    if (!sel) return;
+    sel.innerHTML = '';
+    LEGEND_SHAPE_KEYS.forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = LEGEND_SHAPE_LABELS[key] || key;
+        sel.appendChild(opt);
+    });
+    const v = normalizeLegendShape(value);
+    sel.value = LEGEND_SHAPE_KEYS.includes(v) ? v : 'rectangle';
+}
+
+function populateLegendBorderSelect(value) {
+    const sel = document.getElementById('input-legend-border-style');
+    if (!sel) return;
+    sel.innerHTML = '';
+    LEGEND_BORDER_KEYS.forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = LEGEND_BORDER_LABELS[key] || key;
+        sel.appendChild(opt);
+    });
+    const v = normalizeLegendBorderStyle(value);
+    sel.value = LEGEND_BORDER_KEYS.includes(v) ? v : 'solid';
+}
 
 legendColorInput.addEventListener('input', () => {
     legendColorHex.textContent = legendColorInput.value;
     syncPresetHighlight();
+});
+
+legendBorderColorInput.addEventListener('input', () => {
+    legendBorderColorHex.textContent = legendBorderColorInput.value;
 });
 
 document.querySelectorAll('.color-preset').forEach(btn => {
@@ -381,6 +429,11 @@ document.getElementById('btn-add-legend').addEventListener('click', () => {
     document.getElementById('input-legend-key').value = '';
     legendColorInput.value = '#3b82f6';
     legendColorHex.textContent = '#3b82f6';
+    populateLegendShapeSelect('rectangle');
+    populateLegendBorderSelect('solid');
+    legendBorderColorInput.value = '#3b82f6';
+    legendBorderColorHex.textContent = '#3b82f6';
+    document.getElementById('input-legend-border-size').value = '1.5';
     syncPresetHighlight();
     openModal('modal-legend');
 });
@@ -389,6 +442,10 @@ document.getElementById('btn-save-legend').addEventListener('click', () => {
     const label = document.getElementById('input-legend-label').value.trim();
     let key = document.getElementById('input-legend-key').value.trim();
     const color = legendColorInput.value;
+    const shape = normalizeLegendShape(document.getElementById('input-legend-shape').value);
+    const borderStyle = normalizeLegendBorderStyle(document.getElementById('input-legend-border-style').value);
+    const borderColor = normalizeLegendBorderColor(legendBorderColorInput.value, color);
+    const borderSize = normalizeLegendBorderSize(document.getElementById('input-legend-border-size').value);
 
     if (!label) return;
     if (!key) {
@@ -396,14 +453,14 @@ document.getElementById('btn-save-legend').addEventListener('click', () => {
     }
 
     if (editingLegendId) {
-        updateLegend(editingLegendId, { label, key, color });
+        updateLegend(editingLegendId, { label, key, color, shape, borderStyle, borderColor, borderSize });
     } else {
         const existing = legends.find(l => l.key === key);
         if (existing) {
             if (!confirm(`A legend with key "${key}" already exists. Use a different key.`)) return;
             return;
         }
-        createLegend({ key, label, color });
+        createLegend({ key, label, color, shape, borderStyle, borderColor, borderSize });
     }
     closeAllModals();
 });
@@ -415,6 +472,12 @@ function openEditLegend(legend) {
     document.getElementById('input-legend-key').value = legend.key;
     legendColorInput.value = legend.color;
     legendColorHex.textContent = legend.color;
+    populateLegendShapeSelect(legend.shape);
+    populateLegendBorderSelect(legend.borderStyle);
+    const bc = normalizeLegendBorderColor(legend.borderColor, legend.color);
+    legendBorderColorInput.value = bc;
+    legendBorderColorHex.textContent = bc;
+    document.getElementById('input-legend-border-size').value = String(normalizeLegendBorderSize(legend.borderSize));
     syncPresetHighlight();
     openModal('modal-legend');
 }
@@ -458,6 +521,109 @@ function updateTypeDot() {
 
 elTypeSelect.addEventListener('change', updateTypeDot);
 
+function populateElementShapeSelectForElement(currentValue) {
+    const sel = document.getElementById('input-el-shape');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const def = document.createElement('option');
+    def.value = '';
+    def.textContent = 'Legend default';
+    sel.appendChild(def);
+    LEGEND_SHAPE_KEYS.forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = LEGEND_SHAPE_LABELS[key] || key;
+        sel.appendChild(opt);
+    });
+    const has = currentValue != null && String(currentValue).trim() !== '';
+    const v = has ? normalizeLegendShape(currentValue) : '';
+    sel.value = v && LEGEND_SHAPE_KEYS.includes(v) ? v : '';
+}
+
+function populateElementBorderStyleSelectForElement(currentValue) {
+    const sel = document.getElementById('input-el-border-style');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const def = document.createElement('option');
+    def.value = '';
+    def.textContent = 'Legend default';
+    sel.appendChild(def);
+    LEGEND_BORDER_KEYS.forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = LEGEND_BORDER_LABELS[key] || key;
+        sel.appendChild(opt);
+    });
+    const has = currentValue != null && String(currentValue).trim() !== '';
+    const v = has ? normalizeLegendBorderStyle(currentValue) : '';
+    sel.value = v && LEGEND_BORDER_KEYS.includes(v) ? v : '';
+}
+
+function populateElementAppearanceFields(el) {
+    populateElementShapeSelectForElement(el?.shape);
+    populateElementBorderStyleSelectForElement(el?.borderStyle);
+    const bc = document.getElementById('input-el-border-color');
+    const bs = document.getElementById('input-el-border-size');
+    if (bc) {
+        bc.value = el?.borderColor != null && String(el.borderColor).trim() !== ''
+            ? normalizeLegendBorderColor(el.borderColor, '#000000')
+            : '';
+    }
+    if (bs) {
+        const bsz = el?.borderSize;
+        bs.value = bsz != null && bsz !== '' && Number.isFinite(Number(bsz))
+            ? String(normalizeLegendBorderSize(bsz))
+            : '';
+    }
+}
+
+function legendFillForType(typeKey) {
+    const leg = legends.find(l => l.key === typeKey);
+    return leg?.color || ELEMENT_TYPES[typeKey]?.color || '#999999';
+}
+
+/** Only non-empty overrides; createElement persists these. */
+function elementAppearancePayloadForCreate(typeKey) {
+    const fill = legendFillForType(typeKey);
+    const shapeSel = document.getElementById('input-el-shape')?.value.trim() || '';
+    const borderStyleSel = document.getElementById('input-el-border-style')?.value.trim() || '';
+    const borderColorRaw = document.getElementById('input-el-border-color')?.value.trim() || '';
+    const borderSizeRaw = document.getElementById('input-el-border-size')?.value.trim() || '';
+    const out = {};
+    if (shapeSel) out.shape = normalizeLegendShape(shapeSel);
+    if (borderStyleSel) out.borderStyle = normalizeLegendBorderStyle(borderStyleSel);
+    if (borderColorRaw && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(borderColorRaw)) {
+        out.borderColor = normalizeLegendBorderColor(borderColorRaw, fill);
+    }
+    if (borderSizeRaw !== '' && !Number.isNaN(parseFloat(borderSizeRaw))) {
+        out.borderSize = normalizeLegendBorderSize(parseFloat(borderSizeRaw));
+    }
+    return out;
+}
+
+/** Null clears stored override so the element inherits from the legend again. */
+function elementAppearancePayloadForUpdate(typeKey) {
+    const fill = legendFillForType(typeKey);
+    const shapeSel = document.getElementById('input-el-shape')?.value.trim() || '';
+    const borderStyleSel = document.getElementById('input-el-border-style')?.value.trim() || '';
+    const borderColorRaw = document.getElementById('input-el-border-color')?.value.trim() || '';
+    const borderSizeRaw = document.getElementById('input-el-border-size')?.value.trim() || '';
+    let borderColor = null;
+    if (borderColorRaw) {
+        borderColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(borderColorRaw)
+            ? normalizeLegendBorderColor(borderColorRaw, fill)
+            : null;
+    }
+    return {
+        shape: shapeSel ? normalizeLegendShape(shapeSel) : null,
+        borderStyle: borderStyleSel ? normalizeLegendBorderStyle(borderStyleSel) : null,
+        borderColor,
+        borderSize: (borderSizeRaw !== '' && !Number.isNaN(parseFloat(borderSizeRaw)))
+            ? normalizeLegendBorderSize(parseFloat(borderSizeRaw))
+            : null,
+    };
+}
+
 const elRotationSlider = document.getElementById('input-el-rotation-slider');
 const elRotationInput = document.getElementById('input-el-rotation');
 
@@ -479,6 +645,7 @@ document.getElementById('btn-add-element').addEventListener('click', () => {
     elRotationSlider.value = '0';
     elRotationInput.value = '0';
     populateTypeSelect();
+    populateElementAppearanceFields(null);
     openModal('modal-element');
 });
 
@@ -498,6 +665,7 @@ document.getElementById('btn-edit-element').addEventListener('click', () => {
     populateTypeSelect();
     elTypeSelect.value = el.type;
     updateTypeDot();
+    populateElementAppearanceFields(el);
     openModal('modal-element');
 });
 
@@ -524,6 +692,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
             x: clampedX, y: clampedY,
             width: w, height: h,
             rotation: normRot,
+            ...elementAppearancePayloadForUpdate(type),
         });
     } else {
         createElement({
@@ -532,6 +701,7 @@ document.getElementById('btn-save-element').addEventListener('click', () => {
             x: clampedX, y: clampedY,
             width: w, height: h,
             rotation: normRot,
+            ...elementAppearancePayloadForCreate(type),
         });
     }
     closeAllModals();
@@ -643,10 +813,24 @@ function buildLegend() {
         item.className = 'legend-item';
         item.dataset.legendKey = l.key;
 
-        const swatch = document.createElement('span');
-        swatch.className = 'legend-swatch';
-        swatch.style.background = l.color + '40';
-        swatch.style.border = `2px solid ${l.color}`;
+        const previewWrap = document.createElement('span');
+        previewWrap.className = 'legend-shape-preview';
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('width', '18');
+        svg.setAttribute('height', '18');
+        svg.setAttribute('viewBox', '0 0 18 18');
+        svg.setAttribute('class', 'legend-shape-svg');
+        const g = document.createElementNS(SVG_NS, 'g');
+        svg.appendChild(g);
+        const prevStroke = Math.min(2.25, normalizeLegendBorderSize(l.borderSize));
+        appendStyledShape(g, SVG_NS, 1, 1, 16, 16, {
+            shape: normalizeLegendShape(l.shape),
+            fillColor: l.color,
+            strokeColor: normalizeLegendBorderColor(l.borderColor, l.color),
+            strokeWidth: prevStroke,
+            borderStyle: normalizeLegendBorderStyle(l.borderStyle),
+        });
+        previewWrap.appendChild(svg);
 
         const label = document.createElement('span');
         label.className = 'legend-label';
@@ -674,7 +858,7 @@ function buildLegend() {
         actions.appendChild(editBtn);
         actions.appendChild(delBtn);
 
-        item.appendChild(swatch);
+        item.appendChild(previewWrap);
         item.appendChild(label);
         item.appendChild(actions);
         list.appendChild(item);
@@ -1059,6 +1243,16 @@ function updateSelectionPanel() {
             selPos.textContent = `(${el.x}, ${el.y}) ${FLOOR.unit}`;
             selSize.textContent = `${el.width} \u00d7 ${el.height} ${FLOOR.unit}`;
             selRotation.textContent = `${el.rotation || 0}\u00b0`;
+            const ti = ELEMENT_TYPES[el.type];
+            const st = mergeElementDrawStyle(el, ti || {});
+            const overridden = (el.shape != null && String(el.shape).trim() !== '')
+                || (el.borderStyle != null && String(el.borderStyle).trim() !== '')
+                || (el.borderColor != null && String(el.borderColor).trim() !== '')
+                || (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize)));
+            const shapeLbl = LEGEND_SHAPE_LABELS[st.shape] || st.shape;
+            const borderLbl = LEGEND_BORDER_LABELS[st.borderStyle] || st.borderStyle;
+            const line = `${shapeLbl}, ${borderLbl}, ${st.strokeColor}, ${st.strokeWidth}px`;
+            if (selAppearance) selAppearance.textContent = overridden ? `${line} (overrides legend)` : line;
             return;
         }
     }

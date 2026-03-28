@@ -368,11 +368,17 @@ html, body {
     background: #f5f6f8;
 }
 
-.legend-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
+.legend-shape-preview {
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.legend-shape-svg {
+    display: block;
 }
 
 .legend-label {
