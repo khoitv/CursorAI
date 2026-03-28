@@ -85,7 +85,7 @@
                 <div class="info-row"><span class="info-label">Position</span><span class="info-value" id="sel-pos">—</span></div>
                 <div class="info-row"><span class="info-label">Size</span><span class="info-value" id="sel-size">—</span></div>
                 <div class="info-row"><span class="info-label">Rotation</span><span class="info-value" id="sel-rotation">0°</span></div>
-                <div class="info-row"><span class="info-label">Drawn as</span><span class="info-value" id="sel-appearance">—</span></div>
+                <div class="info-row"><span class="info-label">Legend style</span><span class="info-value" id="sel-appearance">—</span></div>
                 <div class="selection-actions">
                     <button class="btn btn-ghost btn-sm" id="btn-edit-element" title="Edit this element">
                         <svg width="14" height="14" viewBox="0 0 14 14"><path d="M10.5 1.5l2 2L4.5 11.5H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
@@ -230,10 +230,10 @@
                     <select id="input-legend-border-style" class="input-sm"></select>
                 </div>
                 <div class="form-group">
-                    <label>Border color</label>
+                    <label for="legend-border-color-hex">Border color</label>
                     <div class="color-picker-row">
-                        <input type="color" id="input-legend-border-color" value="#374151">
-                        <span class="color-hex" id="legend-border-color-hex">#374151</span>
+                        <input type="color" id="input-legend-border-color" value="#374151" aria-label="Border color (picker)">
+                        <input type="text" id="legend-border-color-hex" class="color-hex color-hex-input" placeholder="#RRGGBB or #RGB" spellcheck="false" autocomplete="off" inputmode="text">
                     </div>
                 </div>
                 <div class="form-group">
@@ -241,10 +241,10 @@
                     <input type="number" id="input-legend-border-size" min="0.25" max="12" step="0.25" value="1.5">
                 </div>
                 <div class="form-group">
-                    <label>Fill color</label>
+                    <label for="legend-color-hex">Fill color</label>
                     <div class="color-picker-row">
-                        <input type="color" id="input-legend-color" value="#3b82f6">
-                        <span class="color-hex" id="legend-color-hex">#3b82f6</span>
+                        <input type="color" id="input-legend-color" value="#3b82f6" aria-label="Fill color (picker)">
+                        <input type="text" id="legend-color-hex" class="color-hex color-hex-input" placeholder="#RRGGBB or #RGB" spellcheck="false" autocomplete="off" inputmode="text">
                     </div>
                     <div class="color-presets" id="color-presets">
                         <button type="button" class="color-preset" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
@@ -316,29 +316,6 @@
                             <input type="number" id="input-el-rotation" min="0" max="360" step="1" placeholder="0">
                             <span class="rotation-unit">°</span>
                         </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <p class="form-hint-inline" style="margin:0 0 0.75rem;line-height:1.4">Appearance — leave blank to use the legend; set values to override for this element only.</p>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="input-el-shape">Shape</label>
-                        <select id="input-el-shape" class="input-sm"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="input-el-border-style">Border</label>
-                        <select id="input-el-border-style" class="input-sm"></select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="input-el-border-color">Border color</label>
-                        <input type="text" id="input-el-border-color" class="input-sm" placeholder="Hex or blank for legend" autocomplete="off">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-el-border-size">Border size (px)</label>
-                        <input type="number" id="input-el-border-size" class="input-sm" min="0.25" max="12" step="0.25" placeholder="Legend default">
                     </div>
                 </div>
             </div>

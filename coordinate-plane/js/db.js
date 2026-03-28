@@ -33,16 +33,6 @@ export function subscribeElements(callback) {
                     _dbId: record.id,
                 };
                 if (record.swing) el.swing = record.swing;
-                if (record.shape != null && String(record.shape).trim() !== '') el.shape = record.shape;
-                if (record.borderStyle != null && String(record.borderStyle).trim() !== '') {
-                    el.borderStyle = record.borderStyle;
-                }
-                if (record.borderColor != null && String(record.borderColor).trim() !== '') {
-                    el.borderColor = record.borderColor;
-                }
-                if (record.borderSize != null && record.borderSize !== '' && Number.isFinite(Number(record.borderSize))) {
-                    el.borderSize = Number(record.borderSize);
-                }
                 return el;
             });
             callback({ data: elements });
@@ -63,16 +53,6 @@ export function createElement(el) {
         groupId: el.groupId || '',
     };
     if (el.swing) record.swing = el.swing;
-    if (el.shape != null && String(el.shape).trim() !== '') record.shape = el.shape;
-    if (el.borderStyle != null && String(el.borderStyle).trim() !== '') {
-        record.borderStyle = el.borderStyle;
-    }
-    if (el.borderColor != null && String(el.borderColor).trim() !== '') {
-        record.borderColor = el.borderColor;
-    }
-    if (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize))) {
-        record.borderSize = Number(el.borderSize);
-    }
     db.transact(db.tx.elements[instantId()].update(record));
 }
 
@@ -104,16 +84,6 @@ export function resetElements(currentElements, defaults) {
             height: el.height,
         };
         if (el.swing) record.swing = el.swing;
-        if (el.shape != null && String(el.shape).trim() !== '') record.shape = el.shape;
-        if (el.borderStyle != null && String(el.borderStyle).trim() !== '') {
-            record.borderStyle = el.borderStyle;
-        }
-        if (el.borderColor != null && String(el.borderColor).trim() !== '') {
-            record.borderColor = el.borderColor;
-        }
-        if (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize))) {
-            record.borderSize = Number(el.borderSize);
-        }
         return db.tx.elements[instantId()].update(record);
     });
 
@@ -132,16 +102,6 @@ export function seedDefaults(defaults) {
             height: el.height,
         };
         if (el.swing) record.swing = el.swing;
-        if (el.shape != null && String(el.shape).trim() !== '') record.shape = el.shape;
-        if (el.borderStyle != null && String(el.borderStyle).trim() !== '') {
-            record.borderStyle = el.borderStyle;
-        }
-        if (el.borderColor != null && String(el.borderColor).trim() !== '') {
-            record.borderColor = el.borderColor;
-        }
-        if (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize))) {
-            record.borderSize = Number(el.borderSize);
-        }
         return db.tx.elements[instantId()].update(record);
     });
     db.transact(txs);

@@ -139,7 +139,7 @@ export class FloorPlanRenderer {
             const ph = m.toPixelH(door.height);
 
             const ti = ELEMENT_TYPES.door || { color: '#92400e' };
-            const style = mergeElementDrawStyle(door, ti);
+            const style = mergeElementDrawStyle(null, ti);
             appendStyledShape(group, this.ns, px, py, pw, ph, style);
 
             const arc = document.createElementNS(this.ns, 'path');
@@ -185,7 +185,7 @@ export class FloorPlanRenderer {
         const ph = m.toPixelH(el.height);
 
         const ti = ELEMENT_TYPES[el.type] || { color: '#999' };
-        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(el, ti));
+        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(null, ti));
 
         if (el.rotation) {
             const rcx = px + pw / 2;
@@ -211,7 +211,7 @@ export class FloorPlanRenderer {
         const pw = m.toPixelW(el.width);
         const ph = m.toPixelH(el.height);
         const typeInfo = ELEMENT_TYPES[el.type] || { color: '#999' };
-        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(el, typeInfo));
+        appendStyledShape(group, this.ns, px, py, pw, ph, mergeElementDrawStyle(null, typeInfo));
 
         if (el.rotation) {
             const rcx = px + pw / 2;

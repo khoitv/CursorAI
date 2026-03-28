@@ -791,6 +791,19 @@ input[type="color"]::-webkit-color-swatch {
     letter-spacing: .3px;
 }
 
+.color-picker-row .color-hex-input {
+    flex: 1;
+    min-width: 0;
+    max-width: 11rem;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+}
+
 .color-presets {
     display: flex;
     flex-wrap: wrap;

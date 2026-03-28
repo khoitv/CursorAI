@@ -88,36 +88,17 @@ export function normalizeLegendBorderSize(n) {
 }
 
 /**
- * Final draw style for an element: optional per-element fields override legend (type) defaults.
+ * Draw style for an element from its legend (type) only — shape, border, and colors come from ELEMENT_TYPES.
  */
-export function mergeElementDrawStyle(el, typeInfo) {
+export function mergeElementDrawStyle(_el, typeInfo) {
     const ti = typeInfo || {};
     const fillColor = ti.color || '#999999';
-    const legendShape = normalizeLegendShape(ti.shape);
-    const legendBorderStyle = normalizeLegendBorderStyle(ti.borderStyle);
-    const legendBorderColor = normalizeLegendBorderColor(ti.borderColor, fillColor);
-    const legendBorderSize = normalizeLegendBorderSize(ti.borderSize);
-
-    const shape = el.shape != null && String(el.shape).trim() !== ''
-        ? normalizeLegendShape(el.shape)
-        : legendShape;
-    const borderStyle = el.borderStyle != null && String(el.borderStyle).trim() !== ''
-        ? normalizeLegendBorderStyle(el.borderStyle)
-        : legendBorderStyle;
-    const borderColorSrc = el.borderColor != null && String(el.borderColor).trim() !== ''
-        ? el.borderColor
-        : legendBorderColor;
-    const strokeColor = normalizeLegendBorderColor(borderColorSrc, fillColor);
-    const strokeWidth = (el.borderSize != null && el.borderSize !== '' && Number.isFinite(Number(el.borderSize)))
-        ? normalizeLegendBorderSize(el.borderSize)
-        : legendBorderSize;
-
     return {
-        shape,
+        shape: normalizeLegendShape(ti.shape),
         fillColor,
-        strokeColor,
-        strokeWidth,
-        borderStyle,
+        strokeColor: normalizeLegendBorderColor(ti.borderColor, fillColor),
+        strokeWidth: normalizeLegendBorderSize(ti.borderSize),
+        borderStyle: normalizeLegendBorderStyle(ti.borderStyle),
     };
 }
 
