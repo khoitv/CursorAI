@@ -184,24 +184,31 @@ html, body {
 .app-main {
     display: flex;
     height: calc(100vh - var(--header-h));
+    min-height: 0;
 }
 
 .canvas-container {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     position: relative;
     overflow: hidden;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    align-items: stretch;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
 #floor-plan-svg {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    align-self: stretch;
+    display: block;
     background: var(--surface);
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
-    max-width: 100%;
-    max-height: 100%;
 }
 
 #floor-plan-svg.pan-ready {

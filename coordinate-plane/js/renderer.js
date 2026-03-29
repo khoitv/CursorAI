@@ -23,8 +23,10 @@ export class FloorPlanRenderer {
 
     init() {
         this.svg.setAttribute('viewBox', `0 0 ${this.mapper.svgW} ${this.mapper.svgH}`);
-        this.svg.setAttribute('width', this.mapper.svgW);
-        this.svg.setAttribute('height', this.mapper.svgH);
+        this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        /* User space stays svgW × svgH; on-screen size fills .canvas-container (CSS). */
+        this.svg.setAttribute('width', '100%');
+        this.svg.setAttribute('height', '100%');
 
         ['grid', 'axes', 'dimensions', 'zones', 'groups', 'elements', 'labels', 'selection'].forEach(name => {
             const g = document.createElementNS(this.ns, 'g');
