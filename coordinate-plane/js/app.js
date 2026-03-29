@@ -43,6 +43,10 @@ let seededFloorPlot = false;
 let editingLegendId = null;
 let editingElementDbId = null;
 let activeLegendKey = null;
+let floorResizing = null;
+
+const FLOOR_RESIZE_MIN = 4;
+const FLOOR_RESIZE_MAX = 200;
 
 /* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
@@ -845,6 +849,19 @@ function legendHoverOut() {
 
 /* ======== SVG Events ======== */
 
+function endFloorResizeInteraction() {
+    if (!floorResizing) return;
+    if (floorPlotConfigDbId) {
+        updateFloorPlotConfig(floorPlotConfigDbId, { width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit });
+    }
+    floorResizing = null;
+    document.removeEventListener('mouseup', onFloorResizeDocumentMouseUp);
+}
+
+function onFloorResizeDocumentMouseUp() {
+    endFloorResizeInteraction();
+}
+
 svgEl.addEventListener('mousemove', (e) => {
     /* -- Panning -- */
     if (panning) {
@@ -854,6 +871,36 @@ svgEl.addEventListener('mousemove', (e) => {
         viewBox.x = panning.vbX - dx * (viewBox.w / rect.width);
         viewBox.y = panning.vbY - dy * (viewBox.h / rect.height);
         updateViewBox();
+        return;
+    }
+
+    if (floorResizing) {
+        const pt = svgPoint(e);
+        if (floorResizing.axis === 'width') {
+            const dw = (pt.x - floorResizing.startSvgX) / floorResizing.scaleX;
+            let w = Math.round((floorResizing.startW + dw) * 2) / 2;
+            w = Math.max(FLOOR_RESIZE_MIN, Math.min(FLOOR_RESIZE_MAX, w));
+            if (w !== FLOOR.width) {
+                FLOOR.width = w;
+                mapper.setFloorSize(FLOOR.width, FLOOR.height);
+                renderer.render(elements);
+                updateFloorPlotDisplay();
+                restoreSelection();
+                showRotationHandle();
+            }
+        } else {
+            const dh = -(pt.y - floorResizing.startSvgY) / floorResizing.scaleY;
+            let h = Math.round((floorResizing.startH + dh) * 2) / 2;
+            h = Math.max(FLOOR_RESIZE_MIN, Math.min(FLOOR_RESIZE_MAX, h));
+            if (h !== FLOOR.height) {
+                FLOOR.height = h;
+                mapper.setFloorSize(FLOOR.width, FLOOR.height);
+                renderer.render(elements);
+                updateFloorPlotDisplay();
+                restoreSelection();
+                showRotationHandle();
+            }
+        }
         return;
     }
 
@@ -934,6 +981,27 @@ svgEl.addEventListener('mousedown', (e) => {
         svgEl.classList.add('panning');
         e.preventDefault();
         return;
+    }
+
+    const resizeTarget = e.target.closest('[data-floor-resize-axis]');
+    if (e.button === 0 && resizeTarget) {
+        const axis = resizeTarget.dataset.floorResizeAxis;
+        if (axis === 'width' || axis === 'height') {
+            const pt = svgPoint(e);
+            floorResizing = {
+                axis,
+                startSvgX: pt.x,
+                startSvgY: pt.y,
+                startW: FLOOR.width,
+                startH: FLOOR.height,
+                scaleX: mapper.scaleX,
+                scaleY: mapper.scaleY,
+            };
+            document.addEventListener('mouseup', onFloorResizeDocumentMouseUp);
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
     }
 
     const isCtrl = e.ctrlKey || e.metaKey;
@@ -1028,6 +1096,11 @@ svgEl.addEventListener('mouseup', (e) => {
         return;
     }
 
+    if (floorResizing) {
+        endFloorResizeInteraction();
+        return;
+    }
+
     const isCtrl = e.ctrlKey || e.metaKey;
 
     /* -- Rotation -- */
@@ -1080,6 +1153,10 @@ svgEl.addEventListener('mouseup', (e) => {
 
 svgEl.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+
+    if (floorResizing) {
+        endFloorResizeInteraction();
+    }
 
     if (panning) {
         panning = null;

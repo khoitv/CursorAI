@@ -46,6 +46,7 @@ export class FloorPlanRenderer {
         if (this.options.showGrid) this.drawGrid();
         this.drawAxes();
         if (this.options.showDimensions) this.drawDimensions();
+        this.drawFloorScaleHandles();
         this.drawWalls();
         this.drawDoors(elements.filter(e => e.type === 'door'));
 
@@ -113,6 +114,49 @@ export class FloorPlanRenderer {
         this.line(g, sideX, topPy, sideX, botPy, 'dim-line');
         this.dimArrows(g, sideX, topPy, sideX, botPy);
         this.text(g, sideX + 4, (topPy + botPy) / 2, `${FLOOR.height} ${FLOOR.unit}`, 'dim-label', 'start', -90);
+    }
+
+    /**
+     * Narrow hit targets at the free edge of each overall dimension (always visible).
+     * Drag horizontally on the width handle, vertically on the height handle.
+     */
+    drawFloorScaleHandles() {
+        const g = this.layers.dimensions;
+        const m = this.mapper;
+
+        const topY = m.toPixelY(FLOOR.height) - 14;
+        const rightX = m.toPixelX(FLOOR.width);
+        const halfW = 4;
+        const along = 16;
+        const wHandle = document.createElementNS(this.ns, 'rect');
+        wHandle.setAttribute('x', rightX - halfW);
+        wHandle.setAttribute('y', topY - along / 2);
+        wHandle.setAttribute('width', halfW * 2);
+        wHandle.setAttribute('height', along);
+        wHandle.setAttribute('rx', '2');
+        wHandle.setAttribute('class', 'dim-scale-handle dim-scale-handle--width');
+        wHandle.dataset.floorResizeAxis = 'width';
+        const wTitle = document.createElementNS(this.ns, 'title');
+        wTitle.textContent = 'Drag to resize floor width';
+        wHandle.appendChild(wTitle);
+        g.appendChild(wHandle);
+
+        const sideX = m.toPixelX(FLOOR.width) + 14;
+        const topPy = m.toPixelY(FLOOR.height);
+        const halfH = 4;
+        const alongX = 16;
+        const hHandle = document.createElementNS(this.ns, 'rect');
+        hHandle.setAttribute('x', sideX - alongX / 2);
+        hHandle.setAttribute('y', topPy - halfH);
+        hHandle.setAttribute('width', alongX);
+        hHandle.setAttribute('height', halfH * 2);
+        hHandle.setAttribute('rx', '2');
+        hHandle.setAttribute('class', 'dim-scale-handle dim-scale-handle--height');
+        hHandle.dataset.floorResizeAxis = 'height';
+        const hTitle = document.createElementNS(this.ns, 'title');
+        hTitle.textContent = 'Drag to resize floor height';
+        hHandle.appendChild(hTitle);
+        g.appendChild(hHandle);
     }
 
     drawWalls() {

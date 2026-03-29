@@ -604,6 +604,23 @@ html, body {
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
+.dim-scale-handle {
+    fill: #d1d5db;
+    stroke: #6b7280;
+    stroke-width: 1;
+    cursor: ew-resize;
+    opacity: 0.95;
+}
+
+.dim-scale-handle:hover {
+    fill: #a5b4fc;
+    stroke: #4f46e5;
+}
+
+.dim-scale-handle--height {
+    cursor: ns-resize;
+}
+
 .element-label {
     font-size: 8px;
     fill: #374151;

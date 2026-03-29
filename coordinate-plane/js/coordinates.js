@@ -317,4 +317,12 @@ export class CoordinateMapper {
     toLogicalY(pixelY) {
         return this.floorH - (pixelY - this.padding.top) / this.scaleY;
     }
+
+    /** Update floor extents without reallocating (keeps padding / svg size). */
+    setFloorSize(floorWidth, floorHeight) {
+        this.floorW = floorWidth;
+        this.floorH = floorHeight;
+        this.scaleX = this.drawW / floorWidth;
+        this.scaleY = this.drawH / floorHeight;
+    }
 }
