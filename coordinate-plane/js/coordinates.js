@@ -13,16 +13,16 @@ export const FLOOR = {
 export const ELEMENT_TYPES = {
     wall:      { color: '#374151', label: 'Wall' },
     door:      { color: '#92400e', label: 'Door' },
-    whiteboard:{ color: '#6366f1', label: 'Whiteboard' },
-    desk:      { color: '#f59e0b', label: 'Teacher Desk' },
-    cluster:   { color: '#10b981', label: 'Student Desks' },
-    table:     { color: '#10b981', label: 'Student Table' },
+    whiteboard:{ color: '#6366f1', label: 'Display Monitor' },
+    desk:      { color: '#f59e0b', label: 'Primary Desk' },
+    cluster:   { color: '#10b981', label: 'Workstations' },
+    table:     { color: '#10b981', label: 'Team Table' },
     computer:  { color: '#8b5cf6', label: 'Computer Station' },
     computerDesk: { color: '#8b5cf6', label: 'Computer Desk' },
     computerChair: { color: '#7c3aed', label: 'Computer Chair' },
-    storage:   { color: '#6b7280', label: 'Student Storage' },
-    library:   { color: '#ec4899', label: 'Class Library' },
-    zone:      { color: '#06b6d4', label: 'Reading Area' },
+    storage:   { color: '#6b7280', label: 'Storage' },
+    library:   { color: '#ec4899', label: 'Technology Office Room' },
+    zone:      { color: '#06b6d4', label: 'Collaboration Zone' },
     furniture: { color: '#78716c', label: 'Furniture' }
 };
 
@@ -116,14 +116,14 @@ export const DEFAULT_ELEMENTS = [
     {
         id: 'whiteboard',
         type: 'whiteboard',
-        label: 'Whiteboard',
+        label: 'Display Monitor',
         x: 12, y: 30.5,
         width: 16, height: 1.2
     },
     {
         id: 'teacher-desk',
         type: 'desk',
-        label: 'Teacher Desk',
+        label: 'Primary Desk',
         x: 33, y: 27,
         width: 6, height: 4
     },
@@ -200,28 +200,28 @@ export const DEFAULT_ELEMENTS = [
     {
         id: 'storage',
         type: 'storage',
-        label: 'Student Storage',
+        label: 'Storage',
         x: 2, y: 0.5,
         width: 22, height: 2.5
     },
     {
         id: 'library-1',
         type: 'library',
-        label: 'Class Library',
+        label: 'Technology Office Room',
         x: 39.5, y: 17,
         width: 2, height: 2
     },
     {
         id: 'library-2',
         type: 'library',
-        label: 'Class Library',
+        label: 'Technology Office Room',
         x: 39.5, y: 14.5,
         width: 2, height: 2
     },
     {
         id: 'reading-zone',
         type: 'zone',
-        label: 'Reading Area',
+        label: 'Collaboration Zone',
         x: 28, y: 3,
         width: 13, height: 10
     },
