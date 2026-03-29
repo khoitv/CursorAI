@@ -20,8 +20,8 @@ import {
     subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta
 } from './db.js';
 
-const SVG_WIDTH = 740;
-const SVG_HEIGHT = 600;
+let SVG_WIDTH = 740;
+let SVG_HEIGHT = 600;
 
 /* ---- State ---- */
 let elements = [];
@@ -170,6 +170,28 @@ document.getElementById('btn-pan-mode').addEventListener('click', () => {
 
 /* ---- Init ---- */
 renderer.init();
+
+/* Keep SVG coordinate space in sync with the container so the grid always fills
+   the full canvas-container without letterboxing. */
+function resizeSVG(w, h) {
+    if (Math.abs(w - SVG_WIDTH) < 2 && Math.abs(h - SVG_HEIGHT) < 2) return;
+    SVG_WIDTH = w;
+    SVG_HEIGHT = h;
+    mapper = createMapper();
+    renderer.mapper = mapper;
+    svgEl.setAttribute('viewBox', `0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`);
+    viewBox = { x: 0, y: 0, w: SVG_WIDTH, h: SVG_HEIGHT };
+    renderer.render(elements);
+    restoreSelection();
+    document.getElementById('zoom-level').textContent = '100%';
+}
+
+new ResizeObserver((entries) => {
+    for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 10 && height > 10) resizeSVG(Math.round(width), Math.round(height));
+    }
+}).observe(svgEl);
 
 subscribeFloorPlotConfig((resp) => {
     if (resp.error) return;

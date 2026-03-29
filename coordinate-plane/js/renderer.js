@@ -69,15 +69,25 @@ export class FloorPlanRenderer {
         const g = this.layers.grid;
         const m = this.mapper;
 
-        for (let x = 0; x <= FLOOR.width; x++) {
+        // Vertical lines — extend from SVG top to bottom
+        const xLogicalMin = Math.floor(m.toLogicalX(0));
+        const xLogicalMax = Math.ceil(m.toLogicalX(m.svgW));
+        for (let x = xLogicalMin; x <= xLogicalMax; x++) {
             const px = m.toPixelX(x);
-            const cls = (x % 5 === 0) ? 'grid-line grid-line-major' : 'grid-line';
-            this.line(g, px, m.toPixelY(FLOOR.height), px, m.toPixelY(0), cls);
+            if (px < 0 || px > m.svgW) continue;
+            const isMajor = (((x % 5) + 5) % 5 === 0);
+            this.line(g, px, 0, px, m.svgH, isMajor ? 'grid-line grid-line-major' : 'grid-line');
         }
-        for (let y = 0; y <= FLOOR.height; y++) {
+
+        // Horizontal lines — extend from SVG left to right
+        // toLogicalY is inverted: toLogicalY(svgH) < toLogicalY(0)
+        const yLogicalMin = Math.floor(m.toLogicalY(m.svgH));
+        const yLogicalMax = Math.ceil(m.toLogicalY(0));
+        for (let y = yLogicalMin; y <= yLogicalMax; y++) {
             const py = m.toPixelY(y);
-            const cls = (y % 5 === 0) ? 'grid-line grid-line-major' : 'grid-line';
-            this.line(g, m.toPixelX(0), py, m.toPixelX(FLOOR.width), py, cls);
+            if (py < 0 || py > m.svgH) continue;
+            const isMajor = (((y % 5) + 5) % 5 === 0);
+            this.line(g, 0, py, m.svgW, py, isMajor ? 'grid-line grid-line-major' : 'grid-line');
         }
     }
 
