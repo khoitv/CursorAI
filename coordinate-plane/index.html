@@ -62,6 +62,7 @@
         </div>
 
         <aside class="sidebar" id="sidebar">
+            <div class="sidebar-resize-handle" id="sidebar-resize-handle" title="Drag to resize"></div>
             <!-- Floor plot (bounds) -->
             <div class="sidebar-section">
                 <div class="section-header">
@@ -165,6 +166,12 @@
                 <div class="info-row"><span class="info-label">Mouse</span><span class="info-value" id="mouse-coords">—</span></div>
             </div>
         </aside>
+
+        <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Show sidebar">
+            <svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 2L3 8L7 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
     </main>
 
     <!-- Modal Overlay -->

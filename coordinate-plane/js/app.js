@@ -53,6 +53,60 @@ const svgEl = document.getElementById('floor-plan-svg');
 const container = document.getElementById('canvas-container');
 const tooltip = document.getElementById('tooltip');
 
+/* ---- Sidebar Resize ---- */
+const sidebar = document.getElementById('sidebar');
+const sidebarHandle = document.getElementById('sidebar-resize-handle');
+const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+const SIDEBAR_COLLAPSE_THRESHOLD = 80;
+let lastSidebarWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) || 300;
+
+function collapseSidebar() {
+    sidebar.classList.add('collapsed');
+    sidebar.style.width = '';
+    sidebarToggleBtn.classList.add('visible');
+}
+
+function expandSidebar() {
+    sidebar.classList.remove('collapsed');
+    sidebar.style.width = `${lastSidebarWidth}px`;
+    sidebarToggleBtn.classList.remove('visible');
+}
+
+sidebarToggleBtn.addEventListener('click', expandSidebar);
+
+sidebarHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebar.getBoundingClientRect().width || lastSidebarWidth;
+    sidebarHandle.classList.add('dragging');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    function onMove(ev) {
+        const delta = startX - ev.clientX; // left = wider, right = narrower
+        const newW = Math.max(0, startW + delta);
+        if (newW < SIDEBAR_COLLAPSE_THRESHOLD) {
+            collapseSidebar();
+        } else {
+            lastSidebarWidth = newW;
+            sidebar.classList.remove('collapsed');
+            sidebar.style.width = `${newW}px`;
+            sidebarToggleBtn.classList.remove('visible');
+        }
+    }
+
+    function onUp() {
+        sidebarHandle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+});
+
 const selPanel = document.getElementById('selection-panel');
 const multiSelPanel = document.getElementById('multi-selection-panel');
 const noSelPanel = document.getElementById('no-selection-panel');

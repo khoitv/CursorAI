@@ -291,6 +291,78 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
+    flex-shrink: 0;
+    transition: width .18s ease;
+}
+
+.sidebar.collapsed {
+    width: 0 !important;
+    padding: 0;
+    overflow: hidden;
+    border-left: none;
+}
+
+.sidebar-resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: ew-resize;
+    z-index: 10;
+    transition: background var(--transition);
+}
+
+.sidebar-resize-handle::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+    border-radius: 1px;
+    transition: background var(--transition), height var(--transition);
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle.dragging::after {
+    background: var(--accent);
+    height: 48px;
+}
+
+.sidebar-toggle-btn {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 48px;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    box-shadow: var(--shadow);
+    color: var(--text-secondary);
+    transition: background var(--transition), color var(--transition);
+}
+
+.sidebar-toggle-btn.visible {
+    display: flex;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
 }
 
 .sidebar-section {
