@@ -31,9 +31,22 @@
                 <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1 1 1.8 4.3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 5v4h4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                 <span>Reset</span>
             </button>
-            <button id="btn-export" class="btn" title="Export JSON">
+            <label class="export-format-label" title="Export file format">
+                <select id="export-format" class="toolbar-select" aria-label="Export format">
+                    <option value="json" selected>JSON</option>
+                    <option value="xml">XML</option>
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+            </label>
+            <button id="btn-export" class="btn" title="Download export">
                 <svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                 <span>Export</span>
+            </button>
+            <input type="file" id="import-file-input" accept=".json,.xml,application/json,text/xml,application/xml" tabindex="-1" aria-hidden="true">
+            <button type="button" id="btn-import" class="btn" title="Import JSON or XML export">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 12V2M5 6l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span>Import</span>
             </button>
         </div>
     </header>

@@ -69,6 +69,41 @@ html, body {
     margin: 0 8px;
 }
 
+.export-format-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 2px;
+}
+
+.toolbar-select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: all var(--transition);
+}
+
+.toolbar-select:hover {
+    background: #f5f6f8;
+    color: var(--text);
+}
+
+.toolbar-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+}
+
+#import-file-input {
+    display: none;
+}
+
 /* ---- Buttons ---- */
 
 .btn {

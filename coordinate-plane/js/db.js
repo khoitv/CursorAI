@@ -215,3 +215,74 @@ export function createFloorPlotConfig(config) {
 export function updateFloorPlotConfig(dbId, updates) {
     db.transact(db.tx.roomConfig[dbId].update(updates));
 }
+
+/**
+ * Replace all plan data with an import snapshot (same shape as JSON/XML export).
+ * Deletes existing elements, legends, and group rows, then inserts snapshot rows.
+ */
+export function replaceFromSnapshot(ctx, snapshot) {
+    const txs = [];
+
+    for (const el of ctx.elements) {
+        if (el._dbId) txs.push(db.tx.elements[el._dbId].delete());
+    }
+    for (const el of snapshot.elements) {
+        const record = {
+            elementId: el.id,
+            type: el.type,
+            label: el.label,
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            rotation: el.rotation != null ? el.rotation : 0,
+            groupId: el.groupId != null ? String(el.groupId) : '',
+        };
+        if (el.swing) record.swing = el.swing;
+        txs.push(db.tx.elements[instantId()].update(record));
+    }
+
+    for (const l of ctx.legends) {
+        txs.push(db.tx.legends[l.id].delete());
+    }
+    for (const l of snapshot.legends) {
+        txs.push(db.tx.legends[instantId()].update({
+            key: l.key,
+            label: l.label,
+            color: l.color,
+            shape: l.shape || 'rectangle',
+            borderStyle: l.borderStyle || 'solid',
+            borderColor: l.borderColor || l.color,
+            borderSize: l.borderSize != null ? l.borderSize : 1.5,
+        }));
+    }
+
+    for (const g of ctx.groupMetas) {
+        txs.push(db.tx.groups[g.id].delete());
+    }
+    for (const g of snapshot.groups) {
+        txs.push(db.tx.groups[instantId()].update({
+            groupId: g.groupId,
+            label: g.label,
+            showBorder: g.showBorder !== false,
+            showLabel: g.showLabel !== false,
+        }));
+    }
+
+    const floor = snapshot.floor;
+    if (ctx.floorPlotConfigDbId) {
+        txs.push(db.tx.roomConfig[ctx.floorPlotConfigDbId].update({
+            width: floor.width,
+            height: floor.height,
+            unit: floor.unit,
+        }));
+    } else {
+        txs.push(db.tx.roomConfig[instantId()].update({
+            width: floor.width,
+            height: floor.height,
+            unit: floor.unit,
+        }));
+    }
+
+    db.transact(txs);
+}

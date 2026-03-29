@@ -17,7 +17,8 @@ import {
     createElement, updateElement, deleteElement,
     subscribeLegends, createLegend, updateLegend, deleteLegend, seedLegends,
     subscribeFloorPlotConfig, createFloorPlotConfig, updateFloorPlotConfig,
-    subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta
+    subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta,
+    replaceFromSnapshot,
 } from './db.js';
 
 let SVG_WIDTH = 740;
@@ -47,6 +48,25 @@ let floorResizing = null;
 
 const FLOOR_RESIZE_MIN = 4;
 const FLOOR_RESIZE_MAX = 200;
+
+/** Inlined SVG rules so PNG/JPEG rasterization matches the on-screen floor plan (no external stylesheet in data URLs). */
+const SVG_EXPORT_STYLE_BLOCK = `
+svg { background: #ffffff; }
+.grid-line { stroke: #e8eaed; stroke-width: 0.5; }
+.grid-line-major { stroke: #d0d4da; stroke-width: 0.8; }
+.axis-label { font-size: 9px; fill: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif; }
+.dim-line { stroke: #6b7280; stroke-width: 1; fill: none; }
+.dim-label { font-size: 10px; fill: #6b7280; font-weight: 600; font-family: 'Segoe UI', system-ui, sans-serif; }
+.dim-scale-handle { fill: #d1d5db; stroke: #6b7280; stroke-width: 1; opacity: 0.95; }
+.dim-scale-handle--height { cursor: ns-resize; }
+.element-label { font-size: 8px; fill: #374151; font-weight: 600; font-family: 'Segoe UI', system-ui, sans-serif; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+.wall { stroke: #374151; stroke-width: 2.5; fill: none; }
+.group-border { fill: rgba(59, 130, 246, 0.04); stroke: rgba(59, 130, 246, 0.35); stroke-width: 1.2; stroke-dasharray: 6,4; pointer-events: none; }
+.group-label-text { font-size: 10px; fill: rgba(59, 130, 246, 0.7); font-weight: 700; font-family: 'Segoe UI', system-ui, sans-serif; pointer-events: none; }
+`;
+
+const EXPORT_RASTER_MAX_EDGE = 4096;
+const EXPORT_RASTER_SCALE = 2;
 
 /* ---- DOM Refs ---- */
 const svgEl = document.getElementById('floor-plan-svg');
@@ -128,7 +148,10 @@ const btnLabels = document.getElementById('btn-toggle-labels');
 const btnDims = document.getElementById('btn-toggle-dims');
 const btnEdit = document.getElementById('btn-toggle-edit');
 const btnReset = document.getElementById('btn-reset');
+const exportFormatSelect = document.getElementById('export-format');
 const btnExport = document.getElementById('btn-export');
+const btnImport = document.getElementById('btn-import');
+const importFileInput = document.getElementById('import-file-input');
 
 const modalOverlay = document.getElementById('modal-overlay');
 
@@ -368,16 +391,380 @@ btnReset.addEventListener('click', () => {
     }
 });
 
-btnExport.addEventListener('click', () => {
-    const exportData = elements.map(({ _dbId, ...rest }) => rest);
-    const json = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+function escapeXml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function xmlAttrValue(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    return escapeXml(v);
+}
+
+function buildExportSnapshot() {
+    return {
+        floor: { width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit },
+        elements: elements.map(({ _dbId, ...el }) => ({ ...el })),
+        legends: legends.map(({ id, ...l }) => ({ ...l })),
+        groups: groupMetas.map(({ id, ...g }) => ({ ...g })),
+    };
+}
+
+function snapshotToXml(snap) {
+    const lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<floorPlanExport version="1">',
+        `<floor width="${xmlAttrValue(snap.floor.width)}" height="${xmlAttrValue(snap.floor.height)}" unit="${xmlAttrValue(snap.floor.unit)}"/>`,
+        '<elements>',
+    ];
+    snap.elements.forEach((el) => {
+        const attrs = Object.entries(el)
+            .filter(([, v]) => v !== null && v !== undefined && (typeof v !== 'object'))
+            .map(([k, v]) => `${k}="${xmlAttrValue(v)}"`)
+            .join(' ');
+        lines.push(`<element ${attrs}/>`);
+    });
+    lines.push('</elements>', '<legends>');
+    snap.legends.forEach((leg) => {
+        const attrs = Object.entries(leg)
+            .filter(([, v]) => v !== null && v !== undefined && (typeof v !== 'object'))
+            .map(([k, v]) => `${k}="${xmlAttrValue(v)}"`)
+            .join(' ');
+        lines.push(`<legend ${attrs}/>`);
+    });
+    lines.push('</legends>', '<groups>');
+    snap.groups.forEach((g) => {
+        const attrs = Object.entries(g)
+            .filter(([, v]) => v !== null && v !== undefined && (typeof v !== 'object'))
+            .map(([k, v]) => `${k}="${xmlAttrValue(v)}"`)
+            .join(' ');
+        lines.push(`<group ${attrs}/>`);
+    });
+    lines.push('</groups>', '</floorPlanExport>');
+    return lines.join('\n');
+}
+
+function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'floorplan-elements.json';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+function prepareSvgCloneForExport() {
+    const clone = svgEl.cloneNode(true);
+    const selLayer = clone.querySelector('g[data-layer="selection"]');
+    if (selLayer) selLayer.innerHTML = '';
+    clone.querySelectorAll('.floor-element').forEach((node) => {
+        node.classList.remove('selected', 'legend-match');
+    });
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const w = SVG_WIDTH;
+    const h = SVG_HEIGHT;
+    clone.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const scale = Math.min(EXPORT_RASTER_SCALE, EXPORT_RASTER_MAX_EDGE / Math.max(w, h, 1));
+    const outW = Math.max(1, Math.round(w * scale));
+    const outH = Math.max(1, Math.round(h * scale));
+    clone.setAttribute('width', String(outW));
+    clone.setAttribute('height', String(outH));
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    const styleEl = document.createElementNS(SVG_NS, 'style');
+    styleEl.textContent = SVG_EXPORT_STYLE_BLOCK;
+    defs.appendChild(styleEl);
+    clone.insertBefore(defs, clone.firstChild);
+    return { clone, outW, outH };
+}
+
+function exportFloorPlanRaster(mime, filename) {
+    const { clone, outW, outH } = prepareSvgCloneForExport();
+    const svgStr = new XMLSerializer().serializeToString(clone);
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgStr)}`;
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = outW;
+        canvas.height = outH;
+        const ctx = canvas.getContext('2d');
+        if (mime === 'image/jpeg') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, outW, outH);
+        }
+        ctx.drawImage(img, 0, 0);
+        const quality = mime === 'image/jpeg' ? 0.92 : undefined;
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    console.error('Export to raster failed.');
+                    return;
+                }
+                downloadBlob(blob, filename);
+            },
+            mime,
+            quality
+        );
+    };
+    img.onerror = () => console.error('Could not rasterize SVG for export.');
+    img.src = dataUrl;
+}
+
+btnExport.addEventListener('click', () => {
+    const format = exportFormatSelect ? exportFormatSelect.value : 'json';
+    const snap = buildExportSnapshot();
+
+    if (format === 'json') {
+        const json = JSON.stringify(snap, null, 2);
+        downloadBlob(new Blob([json], { type: 'application/json' }), 'floorplan-export.json');
+        return;
+    }
+    if (format === 'xml') {
+        const xml = snapshotToXml(snap);
+        downloadBlob(new Blob([xml], { type: 'application/xml' }), 'floorplan-export.xml');
+        return;
+    }
+    if (format === 'png') {
+        exportFloorPlanRaster('image/png', 'floorplan-export.png');
+        return;
+    }
+    if (format === 'jpeg') {
+        exportFloorPlanRaster('image/jpeg', 'floorplan-export.jpg');
+    }
+});
+
+const XML_BOOL_ATTRS = new Set(['showBorder', 'showLabel']);
+const XML_NUMERIC_ATTRS = new Set(['width', 'height', 'x', 'y', 'rotation', 'borderSize']);
+
+function xmlNodeToRecord(node) {
+    const o = {};
+    for (const attr of node.attributes) {
+        const name = attr.name;
+        const raw = attr.value;
+        if (XML_BOOL_ATTRS.has(name)) {
+            o[name] = raw === 'true';
+        } else if (XML_NUMERIC_ATTRS.has(name)) {
+            const n = Number(raw);
+            if (Number.isNaN(n)) throw new Error(`Invalid number for attribute "${name}"`);
+            o[name] = n;
+        } else {
+            o[name] = raw;
+        }
+    }
+    return o;
+}
+
+function parseImportXml(text) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    if (doc.querySelector('parsererror')) {
+        throw new Error('Invalid XML');
+    }
+    const root = doc.querySelector('floorPlanExport');
+    if (!root) {
+        throw new Error('Not a floor plan export (missing floorPlanExport root)');
+    }
+    const floorNode = root.querySelector(':scope > floor');
+    if (!floorNode) throw new Error('Missing floor element in XML');
+    const floor = xmlNodeToRecord(floorNode);
+    if (!floor.unit) floor.unit = 'ft';
+
+    const elements = [...root.querySelectorAll(':scope > elements > element')].map(xmlNodeToRecord);
+    const legends = [...root.querySelectorAll(':scope > legends > legend')].map(xmlNodeToRecord);
+    const groups = [...root.querySelectorAll(':scope > groups > group')].map(xmlNodeToRecord);
+
+    return { floor, elements, legends, groups };
+}
+
+function parseImportJson(text) {
+    const data = JSON.parse(text);
+    if (Array.isArray(data)) {
+        return {
+            floor: { width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit },
+            elements: data,
+            legends: [],
+            groups: [],
+        };
+    }
+    if (data && typeof data === 'object' && Array.isArray(data.elements)) {
+        return {
+            floor: data.floor && typeof data.floor === 'object'
+                ? data.floor
+                : { width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit },
+            elements: data.elements,
+            legends: Array.isArray(data.legends) ? data.legends : [],
+            groups: Array.isArray(data.groups) ? data.groups : [],
+        };
+    }
+    throw new Error('Unrecognized JSON (expected object with elements[] or a legacy elements array)');
+}
+
+function parseImportFile(text, filename) {
+    const lower = (filename || '').toLowerCase();
+    if (lower.endsWith('.xml')) return parseImportXml(text);
+    if (lower.endsWith('.json')) return parseImportJson(text);
+    const t = text.trimStart();
+    if (t.startsWith('<')) return parseImportXml(text);
+    return parseImportJson(text);
+}
+
+function normalizeFloorFromImport(f) {
+    const w = Number(f?.width ?? FLOOR.width);
+    const h = Number(f?.height ?? FLOOR.height);
+    const unit = f?.unit != null && String(f.unit).trim() !== '' ? String(f.unit) : FLOOR.unit;
+    return { width: w, height: h, unit };
+}
+
+function coerceElementFromImport(el) {
+    const rotation = el.rotation != null ? Number(el.rotation) : 0;
+    const out = {
+        id: el.id != null ? String(el.id) : '',
+        type: el.type != null ? String(el.type) : '',
+        label: el.label != null ? String(el.label) : '',
+        x: Number(el.x),
+        y: Number(el.y),
+        width: Number(el.width),
+        height: Number(el.height),
+        rotation: Number.isFinite(rotation) ? rotation : 0,
+        groupId: el.groupId != null ? String(el.groupId) : '',
+    };
+    if (el.swing != null && el.swing !== '') out.swing = String(el.swing);
+    return out;
+}
+
+function coerceLegendFromImport(l) {
+    const borderSize = l.borderSize != null ? Number(l.borderSize) : 1.5;
+    return {
+        key: String(l.key),
+        label: String(l.label),
+        color: String(l.color),
+        shape: l.shape != null ? String(l.shape) : 'rectangle',
+        borderStyle: l.borderStyle != null ? String(l.borderStyle) : 'solid',
+        borderColor: l.borderColor != null ? String(l.borderColor) : String(l.color),
+        borderSize: Number.isFinite(borderSize) ? borderSize : 1.5,
+    };
+}
+
+function coerceGroupFromImport(g) {
+    return {
+        groupId: String(g.groupId),
+        label: g.label != null ? String(g.label) : '',
+        showBorder: g.showBorder !== false,
+        showLabel: g.showLabel !== false,
+    };
+}
+
+function mergeLegendsForElements(legends, elementList) {
+    const byKey = new Map((legends || []).map((l) => [l.key, { ...l }]));
+    const defaultsByKey = new Map(DEFAULT_LEGENDS.map((l) => [l.key, l]));
+    const types = new Set(elementList.map((e) => e.type).filter(Boolean));
+    for (const t of types) {
+        if (!byKey.has(t)) {
+            const d = defaultsByKey.get(t);
+            byKey.set(
+                t,
+                d
+                    ? { ...d }
+                    : {
+                        key: t,
+                        label: t,
+                        color: '#6b7280',
+                        shape: 'rectangle',
+                        borderStyle: 'solid',
+                        borderColor: '#6b7280',
+                        borderSize: 1.5,
+                    }
+            );
+        }
+    }
+    return Array.from(byKey.values());
+}
+
+function validateAndNormalizeImportedSnapshot(raw) {
+    const floor = normalizeFloorFromImport(raw.floor);
+    if (!Number.isFinite(floor.width) || floor.width <= 0) {
+        throw new Error('Invalid floor width');
+    }
+    if (!Number.isFinite(floor.height) || floor.height <= 0) {
+        throw new Error('Invalid floor height');
+    }
+
+    if (!Array.isArray(raw.elements)) throw new Error('Missing elements array');
+
+    const elements = raw.elements.map((el, i) => {
+        const c = coerceElementFromImport(el);
+        if (!c.id) throw new Error(`Element at index ${i} is missing id`);
+        if (!c.type) throw new Error(`Element "${c.id}" is missing type`);
+        if (!Number.isFinite(c.x) || !Number.isFinite(c.y) || !Number.isFinite(c.width) || !Number.isFinite(c.height)) {
+            throw new Error(`Element "${c.id}" has invalid position or size`);
+        }
+        if (c.width <= 0 || c.height <= 0) throw new Error(`Element "${c.id}" has invalid dimensions`);
+        return c;
+    });
+
+    let legends = (raw.legends || []).map((l, i) => {
+        const c = coerceLegendFromImport(l);
+        if (!c.key) throw new Error(`Legend at index ${i} is missing key`);
+        if (!c.label) throw new Error(`Legend "${c.key}" is missing label`);
+        if (!c.color) throw new Error(`Legend "${c.key}" is missing color`);
+        return c;
+    });
+
+    legends = mergeLegendsForElements(legends, elements);
+    if (legends.length === 0) {
+        legends = JSON.parse(JSON.stringify(DEFAULT_LEGENDS));
+    }
+
+    const groups = (raw.groups || []).map((g, i) => {
+        const c = coerceGroupFromImport(g);
+        if (!c.groupId) throw new Error(`Group at index ${i} is missing groupId`);
+        return c;
+    });
+
+    return { floor, elements, legends, groups };
+}
+
+btnImport.addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+});
+
+importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files && importFileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const text = String(reader.result || '');
+            const parsed = parseImportFile(text, file.name);
+            const snapshot = validateAndNormalizeImportedSnapshot(parsed);
+            const n = snapshot.elements.length;
+            if (!window.confirm(
+                `Replace the current floor plan with this import (${n} element${n === 1 ? '' : 's'})? This cannot be undone.`
+            )) {
+                return;
+            }
+            clearSelection();
+            replaceFromSnapshot(
+                {
+                    elements,
+                    legends,
+                    groupMetas,
+                    floorPlotConfigDbId,
+                },
+                snapshot
+            );
+            updateSelectionPanel();
+        } catch (err) {
+            console.error(err);
+            window.alert(`Import failed: ${err.message || err}`);
+        }
+    };
+    reader.onerror = () => window.alert('Could not read the file.');
+    reader.readAsText(file);
 });
 
 /* ======== Modal System ======== */
