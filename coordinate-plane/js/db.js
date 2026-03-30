@@ -5,9 +5,11 @@
 
 import { init, id as instantId } from '@instantdb/core';
 
-const APP_ID = '893fc487-41f4-4370-a6e5-b25bff85fe99';
+/** OfficeManagement app in Instant; override per env with VITE_INSTANT_APP_ID if needed */
+const APP_ID =
+    import.meta.env.VITE_INSTANT_APP_ID || '893fc487-41f4-4370-a6e5-b25bff85fe99';
 
-const db = init({ appId: APP_ID });
+export const db = init({ appId: APP_ID });
 
 /* ---- Elements ---- */
 

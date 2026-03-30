@@ -20,6 +20,7 @@ import {
     subscribeGroups, createGroup, updateGroupMeta, deleteGroupMeta,
     replaceFromSnapshot,
 } from './db.js';
+import { initAuth } from './auth.js';
 
 let SVG_WIDTH = 740;
 let SVG_HEIGHT = 600;
@@ -270,65 +271,71 @@ new ResizeObserver((entries) => {
     }
 }).observe(svgEl);
 
-subscribeFloorPlotConfig((resp) => {
-    if (resp.error) return;
-    if (resp.data.length === 0 && !seededFloorPlot) {
-        seededFloorPlot = true;
-        createFloorPlotConfig({ width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit });
-        return;
-    }
-    if (resp.data.length > 0) {
-        const cfg = resp.data[0];
-        floorPlotConfigDbId = cfg.id;
-        const changed = FLOOR.width !== cfg.width || FLOOR.height !== cfg.height || FLOOR.unit !== cfg.unit;
-        FLOOR.width = cfg.width;
-        FLOOR.height = cfg.height;
-        FLOOR.unit = cfg.unit;
-        updateFloorPlotDisplay();
-        if (changed) rebuildRenderer();
-    }
-});
+function startDataSubscriptions() {
+    subscribeFloorPlotConfig((resp) => {
+        if (resp.error) return;
+        if (resp.data.length === 0 && !seededFloorPlot) {
+            seededFloorPlot = true;
+            createFloorPlotConfig({ width: FLOOR.width, height: FLOOR.height, unit: FLOOR.unit });
+            return;
+        }
+        if (resp.data.length > 0) {
+            const cfg = resp.data[0];
+            floorPlotConfigDbId = cfg.id;
+            const changed = FLOOR.width !== cfg.width || FLOOR.height !== cfg.height || FLOOR.unit !== cfg.unit;
+            FLOOR.width = cfg.width;
+            FLOOR.height = cfg.height;
+            FLOOR.unit = cfg.unit;
+            updateFloorPlotDisplay();
+            if (changed) rebuildRenderer();
+        }
+    });
 
-subscribeLegends((resp) => {
-    if (resp.error) return;
-    if (resp.data.length === 0 && !seededLegends) {
-        seededLegends = true;
-        seedLegends(DEFAULT_LEGENDS);
-        return;
-    }
-    legends = resp.data;
-    syncElementTypes();
-    buildLegend();
-    populateTypeSelect();
-    renderer.render(elements);
-    restoreSelection();
-});
-
-subscribeGroups((resp) => {
-    if (resp.error) return;
-    groupMetas = resp.data || [];
-    renderer.groupMetas = groupMetas;
-    renderer.render(elements);
-    restoreSelection();
-});
-
-subscribeElements((resp) => {
-    if (resp.error) {
-        console.error('DB error, falling back to defaults');
-        elements = JSON.parse(JSON.stringify(DEFAULT_ELEMENTS));
+    subscribeLegends((resp) => {
+        if (resp.error) return;
+        if (resp.data.length === 0 && !seededLegends) {
+            seededLegends = true;
+            seedLegends(DEFAULT_LEGENDS);
+            return;
+        }
+        legends = resp.data;
+        syncElementTypes();
+        buildLegend();
+        populateTypeSelect();
         renderer.render(elements);
-        return;
-    }
-    if (resp.data.length === 0 && !seededElements) {
-        seededElements = true;
-        seedDefaults(DEFAULT_ELEMENTS);
-        return;
-    }
-    elements = resp.data;
-    renderer.render(elements);
-    restoreSelection();
-    updateSelectionPanel();
-});
+        restoreSelection();
+    });
+
+    subscribeGroups((resp) => {
+        if (resp.error) return;
+        groupMetas = resp.data || [];
+        renderer.groupMetas = groupMetas;
+        renderer.render(elements);
+        restoreSelection();
+    });
+
+    subscribeElements((resp) => {
+        if (resp.error) {
+            console.error('DB error, falling back to defaults');
+            elements = JSON.parse(JSON.stringify(DEFAULT_ELEMENTS));
+            renderer.render(elements);
+            return;
+        }
+        if (resp.data.length === 0 && !seededElements) {
+            seededElements = true;
+            seedDefaults(DEFAULT_ELEMENTS);
+            return;
+        }
+        elements = resp.data;
+        renderer.render(elements);
+        restoreSelection();
+        updateSelectionPanel();
+    });
+
+    updateFloorPlotDisplay();
+}
+
+initAuth({ onSignedIn: startDataSubscriptions });
 
 /* ---- Sync ELEMENT_TYPES from DB legends ---- */
 function syncElementTypes() {
@@ -352,7 +359,6 @@ function updateFloorPlotDisplay() {
     const area = FLOOR.width * FLOOR.height;
     floorAreaDisplay.textContent = `${area.toLocaleString()} sq ${FLOOR.unit}`;
 }
-updateFloorPlotDisplay();
 
 /* ---- Toolbar Buttons ---- */
 btnGrid.addEventListener('click', () => {

@@ -1044,3 +1044,99 @@ input[type="color"]::-webkit-color-swatch {
         display: none;
     }
 }
+
+/* ---- Auth (Google / Instant) ---- */
+
+.auth-user-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.auth-user-email {
+    font-size: 13px;
+    color: var(--text-secondary);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(26, 29, 35, 0.45);
+    backdrop-filter: blur(6px);
+}
+
+.auth-overlay[hidden] {
+    display: none;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+}
+
+.auth-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 24px;
+}
+
+.auth-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.btn-google-redirect {
+    text-align: center;
+    text-decoration: none;
+    justify-content: center;
+}
+
+.auth-google-host {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
+    align-items: center;
+}
+
+.auth-hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.auth-hint code {
+    font-size: 11px;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.auth-hint a {
+    color: var(--accent);
+}
