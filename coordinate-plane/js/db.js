@@ -3,13 +3,60 @@
  * Handles CRUD for elements, legends, and floor plot configuration.
  */
 
-import { init, id as instantId } from '@instantdb/core';
+import { init, id as instantId, lookup } from '@instantdb/core';
 
 /** OfficeManagement app in Instant; override per env with VITE_INSTANT_APP_ID if needed */
 export const INSTANT_APP_ID =
     import.meta.env.VITE_INSTANT_APP_ID || '893fc487-41f4-4370-a6e5-b25bff85fe99';
 
 export const db = init({ appId: INSTANT_APP_ID });
+
+/* ---- Account profile (per Instant user; add $users / accountProfiles in Instant if prompted) ---- */
+
+/**
+ * @param {Record<string, unknown> | null | undefined} user
+ * @returns {{ userId: string, displayName: string, fullName: string, email: string, updatedAt: number } | null}
+ */
+export function accountProfileFromUser(user) {
+    if (!user || user.id == null) return null;
+    const userId = String(user.id);
+    const email = typeof user.email === 'string' ? user.email : '';
+    const given = typeof user.given_name === 'string' ? user.given_name.trim() : '';
+    const family = typeof user.family_name === 'string' ? user.family_name.trim() : '';
+    const combined = [given, family].filter(Boolean).join(' ').trim();
+    const fullName =
+        (typeof user.name === 'string' && user.name.trim()) || combined || '';
+    let displayName = fullName;
+    if (!displayName && email.includes('@')) {
+        displayName = email.split('@')[0] || email;
+    }
+    if (!displayName) {
+        displayName = userId.length > 24 ? `${userId.slice(0, 22)}…` : userId;
+    }
+    return {
+        userId,
+        displayName,
+        fullName: fullName || displayName,
+        email,
+        updatedAt: Date.now(),
+    };
+}
+
+/**
+ * Upsert the signed-in user's name/email into InstantDB (namespace: accountProfiles).
+ * @param {Record<string, unknown> | null | undefined} user
+ */
+export function upsertAccountProfile(user) {
+    const rec = accountProfileFromUser(user);
+    if (!rec) return;
+    try {
+        db.transact(
+            db.tx.accountProfiles[lookup('userId', rec.userId)].update(rec)
+        );
+    } catch (e) {
+        console.error('Failed to save account profile:', e);
+    }
+}
 
 /* ---- Elements ---- */
 

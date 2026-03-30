@@ -48,10 +48,22 @@
                 <svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 12V2M5 6l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                 <span>Import</span>
             </button>
-            <div class="separator"></div>
+        </div>
+        <div class="app-header-separator" aria-hidden="true"></div>
+        <div id="auth-header-actions" class="auth-header-actions">
+            <button type="button" id="auth-login-trigger" class="btn btn-primary auth-login-trigger" hidden>Log in</button>
             <div id="auth-user-bar" class="auth-user-bar" hidden>
-                <span id="auth-user-email" class="auth-user-email"></span>
-                <button type="button" id="auth-sign-out" class="btn" title="Sign out">Sign out</button>
+                <div class="auth-user-menu">
+                    <button type="button" id="auth-user-trigger" class="auth-user-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="auth-user-dropdown" title="Account">
+                        <span id="auth-user-name" class="auth-user-name"></span>
+                        <svg class="auth-user-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 5.25L7 8.75l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div id="auth-user-dropdown" class="auth-user-dropdown" hidden role="menu" aria-labelledby="auth-user-trigger">
+                        <div id="auth-user-menu-name" class="auth-user-dropdown-name" role="none"></div>
+                        <div id="auth-user-menu-email" class="auth-user-dropdown-email" role="none"></div>
+                        <button type="button" id="auth-sign-out" class="auth-user-dropdown-logout" role="menuitem">Log out</button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -383,16 +395,17 @@
         </div>
     </div>
 
-    <!-- Visible until JS confirms session; avoids blank app while InstantDB loads auth from IndexedDB -->
-    <div id="auth-overlay" class="auth-overlay" aria-hidden="false">
+    <div id="auth-overlay" class="auth-overlay" hidden aria-hidden="true">
+        <div class="auth-overlay-scrim" data-auth-backdrop tabindex="-1" aria-hidden="true"></div>
         <div class="auth-card" role="dialog" aria-labelledby="auth-title" aria-modal="true">
+            <button type="button" id="auth-modal-close" class="auth-modal-close" aria-label="Close sign-in">×</button>
             <h2 id="auth-title" class="auth-title">Sign in</h2>
             <p class="auth-subtitle">Use your Google account to open the floor plan.</p>
             <div class="auth-actions">
                 <a id="auth-google-redirect" class="btn btn-primary btn-google-redirect" href="#">Continue with Google</a>
                 <div id="auth-google-button-host" class="auth-google-host"></div>
             </div>
-            <p class="auth-hint">Provider <code>google-web</code> in <a href="https://instantdb.com/dash" target="_blank" rel="noopener">Instant</a>. Production: set <code>VITE_GOOGLE_CLIENT_ID</code> on Vercel for the Google popup button.</p>
+            <p class="auth-hint">Provider <code>google-web</code> in <a href="https://instantdb.com/dash" target="_blank" rel="noopener">Instant</a>. Set <code>VITE_GOOGLE_CLIENT_ID</code> on Vercel for Google&rsquo;s button.</p>
         </div>
     </div>
 
