@@ -23,10 +23,23 @@ function loadScript(src) {
     });
 }
 
+/**
+ * URL Instant uses for the OAuth round-trip (no hash / query).
+ * For `/` we use `origin` only (no trailing slash): Instant forwards to Google as
+ * `redirect_uri=https://host` — Google requires that exact string in Authorized redirect URIs.
+ */
+function oauthAppRedirectUrl() {
+    const { origin, pathname } = window.location;
+    if (!pathname || pathname === '/') {
+        return origin;
+    }
+    return `${origin}${pathname}`;
+}
+
 function refreshRedirectLink(linkEl) {
     if (!linkEl) return;
     try {
-        const redirect = encodeURIComponent(window.location.href);
+        const redirect = encodeURIComponent(oauthAppRedirectUrl());
         const client = encodeURIComponent(GOOGLE_CLIENT_NAME);
         linkEl.href = `${INSTANT_API}/runtime/oauth/start?app_id=${INSTANT_APP_ID}&client_name=${client}&redirect_uri=${redirect}`;
     } catch (e) {
