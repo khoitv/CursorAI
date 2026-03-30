@@ -5,7 +5,9 @@
  * @see https://instantdb.com/docs/auth/google-oauth
  */
 
-import { db } from './db.js';
+import { db, INSTANT_APP_ID } from './db.js';
+
+const INSTANT_API = 'https://api.instantdb.com';
 
 const GOOGLE_CLIENT_NAME =
     import.meta.env.VITE_INSTANT_GOOGLE_CLIENT_NAME || 'google-web';
@@ -24,10 +26,15 @@ function loadScript(src) {
 
 function refreshRedirectLink(linkEl) {
     if (!linkEl) return;
-    linkEl.href = db.auth.createAuthorizationURL({
-        clientName: GOOGLE_CLIENT_NAME,
-        redirectURL: window.location.href,
-    });
+    try {
+        // Instant's helper omits encoding; query params in the page URL would break the start URL.
+        const redirect = encodeURIComponent(window.location.href);
+        const client = encodeURIComponent(GOOGLE_CLIENT_NAME);
+        linkEl.href = `${INSTANT_API}/runtime/oauth/start?app_id=${INSTANT_APP_ID}&client_name=${client}&redirect_uri=${redirect}`;
+    } catch (e) {
+        console.error(e);
+        linkEl.href = '#';
+    }
 }
 
 let gsiLoadPromise = null;
@@ -53,16 +60,13 @@ export function initAuth(opts) {
     const userEmail = document.getElementById('auth-user-email');
     const signOutBtn = document.getElementById('auth-sign-out');
 
-    if (import.meta.env.VITE_AUTH_DISABLED === 'true') {
+    const authDisabled = import.meta.env.VITE_AUTH_DISABLED;
+    if (authDisabled === 'true' || authDisabled === '1') {
         overlay?.remove();
         userBar?.remove();
         onSignedIn();
         return () => {};
     }
-
-    // subscribeAuth skips the first emit while isLoading; show sign-in immediately so production
-    // never renders the full app with no overlay during slow IDB/auth resolution.
-    showOverlay();
 
     let nonce = '';
     let appStarted = false;
@@ -87,6 +91,7 @@ export function initAuth(opts) {
             },
             nonce,
             ux_mode: 'popup',
+            use_fedcm_for_prompt: true,
         });
         buttonHost.innerHTML = '';
         window.google.accounts.id.renderButton(buttonHost, {
@@ -133,6 +138,9 @@ export function initAuth(opts) {
         await db.auth.signOut();
         window.location.reload();
     });
+
+    // subscribeAuth skips the first emit while isLoading; show sign-in until we know there is a session.
+    showOverlay();
 
     const unsub = db.subscribeAuth((auth) => {
         if (auth.error) {
