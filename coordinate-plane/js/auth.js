@@ -24,16 +24,12 @@ function loadScript(src) {
 }
 
 /**
- * URL Instant uses for the OAuth round-trip (no hash / query).
- * For `/` we use `origin` only (no trailing slash): Instant forwards to Google as
- * `redirect_uri=https://host` — Google requires that exact string in Authorized redirect URIs.
+ * OAuth return URL. Must be a path Vercel can accept POST on (Google uses form_post).
+ * The serverless handler forwards to `/?code=...&_instant_oauth_redirect=1`.
+ * Register this full URL in Google Cloud → Authorized redirect URIs.
  */
 function oauthAppRedirectUrl() {
-    const { origin, pathname } = window.location;
-    if (!pathname || pathname === '/') {
-        return origin;
-    }
-    return `${origin}${pathname}`;
+    return `${window.location.origin}/api/instant-oauth-callback`;
 }
 
 function refreshRedirectLink(linkEl) {
