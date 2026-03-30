@@ -12,6 +12,7 @@
     "@instantdb/core": "^0.22.165"
   },
   "devDependencies": {
+    "@vercel/edge": "^1.2.2",
     "vite": "^6.2.0"
   }
 }

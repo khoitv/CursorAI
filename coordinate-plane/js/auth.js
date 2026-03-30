@@ -24,12 +24,13 @@ function loadScript(src) {
 }
 
 /**
- * OAuth return URL. Must be a path Vercel can accept POST on (Google uses form_post).
- * The serverless handler forwards to `/?code=...&_instant_oauth_redirect=1`.
- * Register this full URL in Google Cloud → Authorized redirect URIs.
+ * OAuth return URL passed to Instant /oauth/start. Instant forwards to Google using the
+ * **origin only** (matches Redirect Origins in Instant), so Google sees e.g.
+ * `https://your-app.vercel.app` — whitelist that exact URI in Google Cloud.
+ * POST to / is handled by middleware.js → /api/instant-oauth-callback → GET /?code=...
  */
 function oauthAppRedirectUrl() {
-    return `${window.location.origin}/api/instant-oauth-callback`;
+    return window.location.origin;
 }
 
 function refreshRedirectLink(linkEl) {
