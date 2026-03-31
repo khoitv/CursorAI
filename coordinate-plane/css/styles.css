@@ -877,6 +877,8 @@ html, body {
 }
 
 input[type="text"],
+input[type="email"],
+input[type="password"],
 input[type="number"],
 select {
     padding: 8px 12px;
@@ -892,6 +894,8 @@ select {
 }
 
 input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 input[type="number"]:focus,
 select:focus {
     border-color: var(--accent);
@@ -899,6 +903,8 @@ select:focus {
 }
 
 input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
 input[type="number"]::placeholder {
     color: #b0b6c0;
 }
@@ -1362,24 +1368,6 @@ input[type="color"]::-webkit-color-swatch {
     display: flex;
     flex-direction: column;
     gap: 14px;
-}
-
-input[type="password"] {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-family: inherit;
-    color: var(--text);
-    background: var(--surface);
-    transition: border-color var(--transition), box-shadow var(--transition);
-    outline: none;
-    width: 100%;
-}
-
-input[type="password"]:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
 }
 
 /* ---- Auth form error ---- */

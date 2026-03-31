@@ -157,10 +157,12 @@ export function initAuth(opts) {
     const modeLabelText = document.getElementById('auth-mode-label-text');
     const pwForm = document.getElementById('auth-pw-form');
     const displayNameInput = document.getElementById('auth-input-displayname');
+    const emailInput = document.getElementById('auth-input-email');
     const usernameInput = document.getElementById('auth-input-username');
     const passwordInput = document.getElementById('auth-input-password');
     const confirmInput = document.getElementById('auth-input-confirm');
     const fieldDisplayName = document.getElementById('auth-field-displayname');
+    const fieldEmail = document.getElementById('auth-field-email');
     const fieldConfirm = document.getElementById('auth-field-confirm');
     const pwError = document.getElementById('auth-pw-error');
     const pwSubmit = document.getElementById('auth-pw-submit');
@@ -190,6 +192,7 @@ export function initAuth(opts) {
     function setRegisterMode(reg) {
         isRegisterMode = reg;
         if (fieldDisplayName) fieldDisplayName.hidden = !reg;
+        if (fieldEmail) fieldEmail.hidden = !reg;
         if (fieldConfirm) fieldConfirm.hidden = !reg;
         if (confirmInput) confirmInput.required = reg;
         if (pwSubmit) pwSubmit.textContent = reg ? 'Create Account' : 'Sign In';
@@ -353,6 +356,7 @@ export function initAuth(opts) {
         const password = passwordInput?.value ?? '';
         const confirm = confirmInput?.value ?? '';
         const displayName = (displayNameInput?.value ?? '').trim();
+        const email = (emailInput?.value ?? '').trim().toLowerCase();
 
         if (!username) return showPwError('Username is required.');
         if (!/^[a-zA-Z0-9_.-]{2,32}$/.test(username)) {
@@ -363,13 +367,19 @@ export function initAuth(opts) {
         if (pwSubmit) pwSubmit.disabled = true;
         try {
             if (isRegisterMode) {
+                if (!email) return showPwError('Email is required.');
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showPwError('Please enter a valid email address.');
                 if (password !== confirm) return showPwError('Passwords do not match.');
 
-                const data = await dbQueryOnce({
-                    userAccounts: { $: { where: { username } } },
-                });
-                if (data?.userAccounts?.length > 0) {
+                const [byUsername, byEmail] = await Promise.all([
+                    dbQueryOnce({ userAccounts: { $: { where: { username } } } }),
+                    dbQueryOnce({ userAccounts: { $: { where: { email } } } }),
+                ]);
+                if (byUsername?.userAccounts?.length > 0) {
                     return showPwError('That username is already taken.');
+                }
+                if (byEmail?.userAccounts?.length > 0) {
+                    return showPwError('An account with that email already exists.');
                 }
 
                 const hash = await hashPassword(username, password);
@@ -378,14 +388,15 @@ export function initAuth(opts) {
                     db.tx.userAccounts[newId].update({
                         username,
                         displayName: displayName || username,
+                        email,
                         passwordHash: hash,
                         createdAt: Date.now(),
                     })
                 );
 
-                const session = { id: newId, username, displayName: displayName || username };
+                const session = { id: newId, username, displayName: displayName || username, email };
                 setCustomSession(session);
-                showUser({ name: session.displayName, id: session.id, email: '' });
+                showUser({ name: session.displayName, id: session.id, email: session.email });
                 if (!appStarted) { appStarted = true; onSignedIn(); }
                 closeLoginModal();
             } else {
@@ -402,9 +413,10 @@ export function initAuth(opts) {
                     id: account.id,
                     username: account.username,
                     displayName: account.displayName || account.username,
+                    email: account.email || '',
                 };
                 setCustomSession(session);
-                showUser({ name: session.displayName, id: session.id, email: '' });
+                showUser({ name: session.displayName, id: session.id, email: session.email });
                 if (!appStarted) { appStarted = true; onSignedIn(); }
                 closeLoginModal();
             }
