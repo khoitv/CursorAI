@@ -3,7 +3,8 @@
 Interactive office floor plan in the browser: pan, zoom, optional grid, labels, and dimensions; edit layout; export to JSON, XML, PNG, or JPEG; import JSON or XML. Sign-in uses [Instant](https://www.instantdb.com/) with Google OAuth when configured.
 
 The app lives in [`coordinate-plane/`](coordinate-plane/).
-Demo Url: [`coordinate-plane/`](https://coordinate-plane-two.vercel.app/).
+
+Demo Url: [`coordinate-plane/`](https://coordinate-plane-two.vercel.app/). Login to draw
 ## Requirements
 
 - Node.js 18+ (recommended)
