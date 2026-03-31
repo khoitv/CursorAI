@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 :root {
     --bg: #f0f2f5;
     --surface: #ffffff;
@@ -1288,4 +1292,115 @@ input[type="color"]::-webkit-color-swatch {
 
 .auth-hint a {
     color: var(--accent);
+}
+
+/* ---- Auth tabs ---- */
+
+.auth-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.auth-tab:hover {
+    color: var(--text);
+}
+
+.auth-tab--active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* ---- Auth mode switch (Sign in / Register toggle) ---- */
+
+.auth-mode-switch {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.auth-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.auth-link-btn:hover {
+    color: var(--accent-hover);
+}
+
+/* ---- Auth password form ---- */
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+input[type="password"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+    width: 100%;
+}
+
+input[type="password"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+}
+
+/* ---- Auth form error ---- */
+
+.auth-form-error {
+    font-size: 13px;
+    color: var(--danger);
+    background: var(--danger-light);
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    line-height: 1.4;
+}
+
+.auth-form-error[hidden] {
+    display: none;
+}
+
+/* ---- Disabled submit button ---- */
+
+#auth-pw-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

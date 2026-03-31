@@ -400,12 +400,49 @@
         <div class="auth-card" role="dialog" aria-labelledby="auth-title" aria-modal="true">
             <button type="button" id="auth-modal-close" class="auth-modal-close" aria-label="Close sign-in">×</button>
             <h2 id="auth-title" class="auth-title">Sign in</h2>
-            <p class="auth-subtitle">Use your Google account to open the floor plan.</p>
-            <div class="auth-actions">
-                <a id="auth-google-redirect" class="btn btn-primary btn-google-redirect" href="#">Continue with Google</a>
-                <div id="auth-google-button-host" class="auth-google-host"></div>
+
+            <div class="auth-tabs" role="tablist" aria-label="Sign-in method">
+                <button type="button" class="auth-tab auth-tab--active" id="auth-tab-password" role="tab" aria-selected="true" aria-controls="auth-panel-password">Password</button>
+                <button type="button" class="auth-tab" id="auth-tab-google" role="tab" aria-selected="false" aria-controls="auth-panel-google">Google</button>
             </div>
-            <p class="auth-hint">Provider <code>google-web</code> in <a href="https://instantdb.com/dash" target="_blank" rel="noopener">Instant</a>. Set <code>VITE_GOOGLE_CLIENT_ID</code> on Vercel for Google&rsquo;s button.</p>
+
+            <!-- Username + password panel -->
+            <div id="auth-panel-password" role="tabpanel" aria-labelledby="auth-tab-password">
+                <p class="auth-mode-switch">
+                    <span id="auth-mode-label-text">Don't have an account?</span>
+                    <button type="button" id="auth-mode-toggle" class="auth-link-btn">Register</button>
+                </p>
+                <form id="auth-pw-form" class="auth-form" novalidate>
+                    <div id="auth-field-displayname" class="form-group" hidden>
+                        <label for="auth-input-displayname">Display name</label>
+                        <input type="text" id="auth-input-displayname" autocomplete="name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-input-username">Username</label>
+                        <input type="text" id="auth-input-username" autocomplete="username" placeholder="your_username" required spellcheck="false" autocorrect="off" autocapitalize="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-input-password">Password</label>
+                        <input type="password" id="auth-input-password" autocomplete="current-password" placeholder="••••••••" required>
+                    </div>
+                    <div id="auth-field-confirm" class="form-group" hidden>
+                        <label for="auth-input-confirm">Confirm password</label>
+                        <input type="password" id="auth-input-confirm" autocomplete="new-password" placeholder="••••••••">
+                    </div>
+                    <div id="auth-pw-error" class="auth-form-error" hidden role="alert"></div>
+                    <button type="submit" id="auth-pw-submit" class="btn btn-primary btn-block">Sign In</button>
+                </form>
+            </div>
+
+            <!-- Google panel -->
+            <div id="auth-panel-google" role="tabpanel" aria-labelledby="auth-tab-google" hidden>
+                <p class="auth-subtitle">Use your Google account to open the floor plan.</p>
+                <div class="auth-actions">
+                    <a id="auth-google-redirect" class="btn btn-primary btn-google-redirect" href="#">Continue with Google</a>
+                    <div id="auth-google-button-host" class="auth-google-host"></div>
+                </div>
+                <p class="auth-hint">Provider <code>google-web</code> in <a href="https://instantdb.com/dash" target="_blank" rel="noopener">Instant</a>. Set <code>VITE_GOOGLE_CLIENT_ID</code> on Vercel for Google&rsquo;s button.</p>
+            </div>
         </div>
     </div>
 
